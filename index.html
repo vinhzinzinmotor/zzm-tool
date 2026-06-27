@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VẬN HÀNH ZZM</title>
+<title>Xử Lý Đơn Hàng → SKU · ZinZinMotor</title>
 <style>
   /* ===== Design tokens ===== */
   :root{
@@ -38,16 +38,165 @@
   .wrap{max-width:1280px;margin:0 auto}
 
   /* ===== Header ===== */
-  .topbar{display:flex;align-items:center;gap:14px;margin-bottom:18px;color:#fff}
-  .logo{
-    width:44px;height:44px;border-radius:11px;flex:0 0 auto;
-    background:linear-gradient(135deg,#2f86ff,#0b4fc4);
-    display:flex;align-items:center;justify-content:center;
-    font-weight:800;font-size:20px;letter-spacing:.5px;
-    box-shadow:0 4px 14px rgba(31,111,235,.45);
+  /* ===== THANH ĐIỀU HƯỚNG TỰ ẨN/HIỆN ===== */
+  .nav-shell{
+    position:sticky; top:0; z-index:100;
+    display:flex; justify-content:center;
+    margin:0 0 16px;
+    transition:transform .32s cubic-bezier(.4,0,.2,1), opacity .25s ease;
+    will-change:transform;
   }
-  .topbar h1{font-size:21px;margin:0;font-weight:700;letter-spacing:.2px}
-  .topbar p{margin:2px 0 0;font-size:13px;color:#9fb3cc}
+  /* khi đã cuộn -> trượt lên ẩn, trừ khi đang "peek" (gọi mở) */
+  .nav-shell.hidden{
+    transform:translateY(-150%);
+    opacity:0; pointer-events:none;
+  }
+  .nav-shell.peek{
+    transform:translateY(0);
+    opacity:1; pointer-events:auto;
+  }
+  /* Khi đã cuộn: thanh thả ra TỪ GÓC PHẢI (ngay chỗ nút tròn), không thả từ giữa.
+     - chuyển thành lớp nổi cố định, neo bên phải
+     - gốc biến đổi ở trên-phải để cảm giác "bung ra từ nút tròn" */
+  .nav-shell.docked-right{
+    position:fixed; top:12px; right:18px; left:auto;
+    justify-content:flex-end; margin:0;
+    transform-origin:top right;
+  }
+  .nav-shell.docked-right.hidden{
+    transform:translateY(0) scale(.5);
+    opacity:0; pointer-events:none;
+  }
+  .nav-shell.docked-right.peek{
+    transform:translateY(0) scale(1);
+    opacity:1; pointer-events:auto;
+    transition:transform .34s cubic-bezier(.22,1,.36,1), opacity .25s ease;
+  }
+
+  .tabbar{
+    display:flex;gap:6px;
+    background:linear-gradient(135deg,#13243d,#1a3157);
+    padding:7px;border-radius:14px;
+    border:1px solid rgba(120,170,255,.18);
+    box-shadow:0 10px 30px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .tab-btn{
+    border:none;background:transparent;color:#cfe0ff;cursor:pointer;
+    font-family:var(--sans);font-size:14.5px;font-weight:700;
+    padding:10px 24px;border-radius:10px;display:flex;align-items:center;gap:8px;
+    position:relative;white-space:nowrap;
+    transition:background .18s ease,color .18s ease,box-shadow .18s ease,transform .1s ease;
+  }
+  .tab-btn:hover{background:rgba(255,255,255,.12);transform:translateY(-1px)}
+  .tab-btn:active{transform:translateY(0) scale(.98)}
+  .tab-btn.active{
+    background:linear-gradient(135deg,#ffffff,#eef4ff);color:var(--accent-deep);
+    box-shadow:0 4px 14px rgba(0,0,0,.28);
+  }
+  .tab-btn .tab-ico{font-size:17px;line-height:1}
+
+  /* ===== NÚT TRÒN NỔI (gọi thanh khi đã ẩn) ===== */
+  .nav-fab{
+    position:fixed; top:14px; right:20px; left:auto;
+    /* trạng thái ẩn ban đầu: nằm lệch sang TRÁI-GIỮA, để khi "bay" sẽ trượt sang phải */
+    transform:translateX(-44vw) translateY(0) scale(.7) rotate(-12deg);
+    z-index:101;
+    width:48px; height:48px; border-radius:50%; border:none; cursor:pointer;
+    background:linear-gradient(135deg,#22c55e,#15803d);
+    color:#fff; font-size:21px;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 6px 18px rgba(21,128,61,.4);
+    opacity:0; pointer-events:none;
+    /* BAY từ từ: thời gian dài + đường cong nảy nhẹ để thấy rõ chuyển động */
+    transition:transform .9s cubic-bezier(.22,1,.36,1), opacity .5s ease, box-shadow .25s ease;
+  }
+  /* khi thanh ẩn -> nút "bay" về vị trí bên phải, dừng lại nổi bật xanh lá */
+  .nav-fab.show{
+    transform:translateX(0) translateY(0) scale(1) rotate(0deg);
+    opacity:.92; pointer-events:auto;
+  }
+  .nav-fab.show:hover{
+    opacity:1;
+    box-shadow:0 12px 28px rgba(21,128,61,.6), 0 0 0 6px rgba(34,197,94,.22);
+  }
+  .nav-fab:active{ transform:translateX(0) translateY(0) scale(.92); }
+  .fab-ico{ line-height:1; pointer-events:none; }
+  /* vòng nhịp nhẹ quanh nút (xanh lá) để người dùng chú ý */
+  .fab-pulse{
+    position:absolute; inset:0; border-radius:50%;
+    box-shadow:0 0 0 0 rgba(34,197,94,.45);
+    animation:fabPulse 2.6s ease-out infinite; pointer-events:none;
+  }
+  @keyframes fabPulse{
+    0%{ box-shadow:0 0 0 0 rgba(34,197,94,.4); }
+    70%{ box-shadow:0 0 0 11px rgba(34,197,94,0); }
+    100%{ box-shadow:0 0 0 0 rgba(34,197,94,0); }
+  }
+  /* vùng cảm ứng vô hình phía trên-phải để rê chuột tới là mở */
+  .nav-hotzone{
+    position:fixed; top:0; right:0; left:auto; width:200px; height:62px; z-index:99;
+    pointer-events:none;
+  }
+  .nav-hotzone.armed{ pointer-events:auto; }
+
+  /* =========================================================
+     NÚT CUỘN NHANH (góc dưới phải, neo cố định, để mờ)
+     ========================================================= */
+  .quicknav{
+    position:fixed; right:20px; bottom:22px; z-index:95;
+    display:flex; flex-direction:column; gap:12px;
+    pointer-events:none;
+  }
+  .qn-item{
+    pointer-events:auto;
+    display:flex; align-items:center; justify-content:flex-end; gap:0;
+    cursor:pointer; border:none; background:transparent; padding:0;
+    font-family:var(--sans);
+  }
+  .qn-label{
+    max-width:0; overflow:hidden; white-space:nowrap;
+    background:#13243d; color:#eaf2ff; font-size:13px; font-weight:700;
+    border-radius:9px 0 0 9px;
+    line-height:1; opacity:0;
+    transition:max-width .28s cubic-bezier(.4,0,.2,1), opacity .2s ease, padding .28s ease;
+    padding:0; box-shadow:0 6px 16px rgba(0,0,0,.25);
+  }
+  .qn-circle{
+    width:46px; height:46px; flex:0 0 auto; border-radius:50%;
+    background:linear-gradient(135deg,#22c55e,#15803d); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:20px;
+    box-shadow:0 6px 16px rgba(21,128,61,.35);
+    opacity:.85;
+    transition:opacity .2s ease, box-shadow .2s ease;
+    transform-origin:50% 50%;
+    animation:qnWobble 1.8s ease-in-out infinite;
+  }
+  /* lắc lắc liên tục để dễ thấy */
+  @keyframes qnWobble{
+    0%,100%{ transform:rotate(0deg); }
+    20%{ transform:rotate(-9deg); }
+    40%{ transform:rotate(8deg); }
+    60%{ transform:rotate(-5deg); }
+    80%{ transform:rotate(4deg); }
+  }
+  /* nút thứ 2 của MỖI chế độ lắc lệch pha cho sinh động */
+  .quicknav .qn-process:nth-of-type(2) .qn-circle,
+  .quicknav .qn-create:last-of-type .qn-circle{ animation-delay:.5s; }
+  .qn-item:hover .qn-circle{
+    opacity:1; animation-play-state:paused; /* rê vào thì ngừng lắc cho dễ bấm */
+    box-shadow:0 10px 24px rgba(21,128,61,.6), 0 0 0 5px rgba(34,197,94,.2);
+  }
+  .qn-item:hover .qn-label{
+    max-width:260px; opacity:1; padding:13px 16px;
+  }
+  .qn-item:active .qn-circle{ transform:scale(.92); animation:none; }
+  /* mỗi chế độ chỉ hiện bộ nút của nó */
+  .quicknav .qn-process{ display:none; }
+  .quicknav .qn-create{ display:none; }
+  body[data-tab="process"] .quicknav .qn-process{ display:flex; }
+  body[data-tab="create"]  .quicknav .qn-create{ display:flex; }
+
+  @media print{ .quicknav{ display:none !important; } }
 
   /* ===== Card ===== */
   .card{
@@ -78,6 +227,46 @@
     font-family:var(--mono);background:#e3ecff;padding:1px 6px;border-radius:5px;
     font-size:12.5px;color:#0b4fc4;
   }
+
+  /* ===== NÚT BẬT/TẮT HƯỚNG DẪN (hiện đại, nổi bật) ===== */
+  .guide-toggle{
+    display:inline-flex;align-items:center;gap:9px;
+    margin-bottom:14px;cursor:pointer;user-select:none;
+    padding:9px 16px;border-radius:10px;font-size:13.5px;font-weight:700;
+    color:#0b4fc4;
+    background:linear-gradient(135deg,#eef5ff,#dfeaff);
+    border:1px solid #cfe0ff;
+    box-shadow:0 2px 8px rgba(31,111,235,.12);
+    transition:transform .12s ease,box-shadow .18s ease,background .18s ease;
+  }
+  .guide-toggle:hover{
+    transform:translateY(-1px);
+    box-shadow:0 5px 14px rgba(31,111,235,.22);
+    background:linear-gradient(135deg,#e6f0ff,#d3e3ff);
+  }
+  .guide-toggle:active{transform:translateY(0) scale(.99)}
+  .guide-toggle .gt-ico{
+    width:22px;height:22px;border-radius:6px;flex:0 0 auto;
+    background:var(--accent);color:#fff;font-size:14px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .guide-toggle .gt-arrow{
+    margin-left:2px;font-size:12px;transition:transform .22s ease;color:#5a7bb0;
+  }
+  .guide-toggle.open .gt-arrow{transform:rotate(180deg)}
+  /* khối hướng dẫn: ẩn mặc định, mở mượt bằng grid-rows */
+  .guide-wrap{
+    display:grid;grid-template-rows:0fr;
+    transition:grid-template-rows .25s ease, margin .25s ease, opacity .2s ease;
+    opacity:0;margin-bottom:0;
+  }
+  .guide-wrap.open{grid-template-rows:1fr;opacity:1;margin-bottom:4px}
+  .guide-wrap>.guide-inner{overflow:hidden;min-height:0}
+  .guide{
+    background:#f3f7ff;border:1px solid #d6e4ff;border-radius:var(--radius);
+    padding:13px 16px;font-size:13.5px;color:#2c4a76;line-height:1.65;margin-bottom:0;
+  }
+
 
   /* =========================================================
      VÙNG NHẬP — LƯỚI 2 CỘT KIỂU EXCEL
@@ -292,27 +481,17 @@
   }
 
   /* =========================================================
-     THANH TAB CHUYỂN CHỨC NĂNG
+     TAB PANE
      ========================================================= */
-  .tabbar{
-    display:flex;gap:8px;margin-bottom:18px;background:rgba(255,255,255,.08);
-    padding:6px;border-radius:12px;backdrop-filter:blur(4px);width:fit-content;
-  }
-  .tab-btn{
-    border:none;background:transparent;color:#cfe0ff;cursor:pointer;
-    font-family:var(--sans);font-size:15px;font-weight:700;
-    padding:10px 22px;border-radius:9px;display:flex;align-items:center;gap:8px;
-    transition:background .15s ease,color .15s ease,box-shadow .15s ease;
-  }
-  .tab-btn:hover{background:rgba(255,255,255,.10)}
-  .tab-btn.active{
-    background:#fff;color:var(--accent-deep);
-    box-shadow:0 4px 12px rgba(0,0,0,.2);
-  }
-  .tab-btn .tab-ico{font-size:17px}
   .tab-pane{display:none}
   .tab-pane.active{display:block;animation:fadeIn .25s ease}
   @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+  /* thu gọn nhãn tab trên màn hình hẹp -> chỉ còn icon */
+  @media (max-width:560px){
+    .tab-btn .tab-txt{display:none}
+    .tab-btn{padding:10px 16px}
+  }
 
   /* =========================================================
      CHỨC NĂNG 2 — TẠO ĐƠN HÀNG
@@ -404,7 +583,7 @@
     @page{ size:A6 portrait; margin:6mm; }
     body{background:#fff !important;padding:0 !important}
     /* ẩn mọi thứ trừ khu in */
-    .topbar,.tabbar,.card-head,.guide,.grid-tip,.actions,.misa-status,
+    .nav-shell,.nav-fab,.nav-hotzone,.tabbar,.card-head,.guide,.guide-wrap,.guide-toggle,.grid-tip,.actions,.misa-status,
     .grid-input,.lock-hint,.result-meta,.toast-zone,#createInputCard .card-body>*:not(#invoiceArea),
     .no-print{ display:none !important; }
     .card{box-shadow:none !important;border-radius:0 !important;margin:0 !important;background:#fff !important}
@@ -419,26 +598,119 @@
     table.inv-table tr{page-break-inside:avoid;break-inside:avoid}
     .invoice-head{break-after:avoid}
   }
+  /* =========================================================
+     NÚT "CHỈNH SỬA DỮ LIỆU" + CỬA SỔ CHỈNH SỬA (modal)
+     ========================================================= */
+  .btn-edit{
+    background:linear-gradient(135deg,#22c55e,#15803d);color:#fff;
+    box-shadow:0 4px 12px rgba(21,128,61,.32);
+  }
+  .btn-edit:hover{background:linear-gradient(135deg,#1eb555,#13733a)}
+
+  .editor-overlay{
+    position:fixed; inset:0; z-index:1000;
+    background:rgba(8,15,28,.66); backdrop-filter:blur(3px);
+    display:none; align-items:stretch; justify-content:center;
+    padding:24px;
+  }
+  .editor-overlay.open{ display:flex; animation:edFade .2s ease; }
+  @keyframes edFade{ from{opacity:0} to{opacity:1} }
+
+  .editor-modal{
+    background:var(--panel); border-radius:16px; width:100%; max-width:1180px;
+    display:flex; flex-direction:column; overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,.55);
+    animation:edPop .24s cubic-bezier(.22,1,.36,1);
+  }
+  @keyframes edPop{ from{transform:translateY(16px) scale(.98);opacity:0} to{transform:none;opacity:1} }
+
+  .editor-head{
+    display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+    padding:16px 20px; border-bottom:1px solid var(--line);
+    background:linear-gradient(135deg,#13243d,#1a3157);
+  }
+  .editor-title{display:flex;align-items:center;gap:11px;color:#fff;font-size:18px;font-weight:800}
+  .editor-ico{font-size:22px}
+  .editor-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .ed-btn{padding:9px 16px;font-size:14px}
+
+  .editor-hint{
+    padding:11px 20px; font-size:13.5px; color:#2c4a76; background:#f3f7ff;
+    border-bottom:1px solid #e1ebff; line-height:1.6;
+  }
+  .editor-hint code{font-family:var(--mono);background:#e3ecff;padding:1px 6px;border-radius:5px;color:#0b4fc4;font-size:12.5px}
+
+  .editor-body{
+    padding:18px 20px; overflow:auto; flex:1 1 auto;
+    background:var(--panel);
+  }
+  /* Khi lưới nằm TRONG modal: phóng to chữ + cho cuộn cao hơn, tiêu đề cột dính */
+  .editor-body .grid-input{ max-width:none; }
+  .editor-body .grid-scroll{ max-height:calc(100vh - 290px); }
+  .editor-body .grid-input-head,
+  .editor-body .grid4-head{
+    position:sticky; top:0; z-index:8; /* tiêu đề cột cố định khi cuộn */
+  }
+  .editor-body .grid-cell textarea,
+  .editor-body .grid4-cell textarea{
+    font-size:16px; line-height:1.6; padding:11px 14px; min-height:46px;
+  }
+  .editor-body .grid-input-head>div,
+  .editor-body .grid4-head>div{
+    font-size:14px; padding:13px 14px;
+  }
+  /* khi lưới đang ở trong modal thì ẩn bản nền (tránh nhân đôi) — xử lý bằng JS chuyển DOM nên không cần, giữ chỗ */
+
+  @media (max-width:640px){
+    .editor-overlay{padding:8px}
+    .editor-body .grid-scroll{max-height:calc(100vh - 320px)}
+  }
+
 </style>
 </head>
-<body>
+<body data-tab="process">
 <div class="wrap">
 
-  <div class="topbar">
-    <div class="logo">ZZ</div>
-    <div>
-      <h1 id="appTitle">ZinZinMotor · Xử Lý Đơn</h1>
-      <p id="appSub">Dán dữ liệu Shopee → tách SKU · Số lượng · Giá bán</p>
+  <!-- ===== THANH ĐIỀU HƯỚNG (chỉ 2 nút). Tự ẩn khi cuộn, gọi lại bằng nút tròn. ===== -->
+  <div class="nav-shell" id="navShell">
+    <div class="tabbar" id="tabbar">
+      <button class="tab-btn active" id="tabBtnProcess" data-tab="process">
+        <span class="tab-ico">📋</span><span class="tab-txt">Xử Lý Đơn</span>
+      </button>
+      <button class="tab-btn" id="tabBtnCreate" data-tab="create">
+        <span class="tab-ico">🧾</span><span class="tab-txt">Tạo Đơn Hàng</span>
+      </button>
     </div>
   </div>
 
-  <!-- ===== THANH TAB CHỌN CHỨC NĂNG ===== -->
-  <div class="tabbar">
-    <button class="tab-btn active" id="tabBtnProcess" data-tab="process">
-      <span class="tab-ico">📋</span> Xử Lý Đơn
+  <!-- Nút tròn nổi: chỉ hiện khi thanh đã ẩn (đã cuộn). Rê chuột / bấm để mở thanh. -->
+  <button class="nav-fab" id="navFab" type="button" aria-label="Mở thanh chọn chức năng">
+    <span class="fab-ico" id="fabIco">📋</span>
+    <span class="fab-pulse"></span>
+  </button>
+
+  <!-- Vùng cảm ứng vô hình sát mép trên: rê chuột tới là mở thanh (khi đã ẩn) -->
+  <div class="nav-hotzone" id="navHotzone"></div>
+
+  <!-- ===== NÚT CUỘN NHANH (góc dưới phải) ===== -->
+  <div class="quicknav" id="quicknav">
+    <!-- Bộ nút cho chế độ Xử Lý Đơn -->
+    <button class="qn-item qn-process" type="button" data-target="sec-p-input">
+      <span class="qn-label">Tới: Dán dữ liệu đơn hàng</span>
+      <span class="qn-circle">📥</span>
     </button>
-    <button class="tab-btn" id="tabBtnCreate" data-tab="create">
-      <span class="tab-ico">🧾</span> Tạo Đơn Hàng
+    <button class="qn-item qn-process" type="button" data-target="sec-p-result">
+      <span class="qn-label">Tới: Bảng Kết quả</span>
+      <span class="qn-circle">📊</span>
+    </button>
+    <!-- Bộ nút cho chế độ Tạo Đơn Hàng -->
+    <button class="qn-item qn-create" type="button" data-target="sec-c-input">
+      <span class="qn-label">Tới: Nhập dữ liệu đơn hàng</span>
+      <span class="qn-circle">📥</span>
+    </button>
+    <button class="qn-item qn-create" type="button" data-target="sec-c-invoice">
+      <span class="qn-label">Tới: Đơn hàng (xem trước in)</span>
+      <span class="qn-circle">🧾</span>
     </button>
   </div>
 
@@ -450,23 +722,33 @@
   <!-- ===== VÙNG NHẬP — LƯỚI 2 CỘT ===== -->
   <div class="card">
     <div class="card-head">
-      <div class="title"><span class="step">1</span> Dán dữ liệu đơn hàng</div>
+      <div class="title" id="sec-p-input"><span class="step">1</span> Dán dữ liệu đơn hàng</div>
     </div>
     <div class="card-body">
 
-      <div class="guide">
-        <b>Cách dùng:</b>
-        <ol>
-          <li>Trong Excel/Google Sheets, bôi đen <b>2 cột</b> <code>order_sn</code> và <code>product_info</code>, nhấn <code>Ctrl + C</code>.</li>
-          <li>Nhấp vào <b>ô đầu tiên</b> của lưới bên dưới, nhấn <code>Ctrl + V</code> — dữ liệu tự rải vào đúng 2 cột, đủ số hàng.</li>
-          <li>Bấm <b>Xử lý dữ liệu</b>. Bảng kết quả hiện ngay bên dưới.</li>
-          <li>Trong bảng kết quả: <b>nhấp đúp</b> một ô để sửa (giống Excel). Chỉ một lần nhấp thì chỉ chọn ô, không sửa được — tránh bấm lộn làm hỏng dữ liệu.</li>
-          <li><b>Kéo chuột</b> để bôi đen nhiều ô rồi <code>Ctrl + C</code> để copy như Excel.</li>
-          <li>Lỡ tay xóa hoặc sửa nhầm? Nhấn <code>Ctrl + Z</code> để <b>hoàn tác</b> (nhiều bước), <code>Ctrl + Y</code> để <b>làm lại</b>. Bôi đen ô rồi nhấn <code>Delete</code> để xóa nội dung.</li>
-        </ol>
+      <button class="guide-toggle" id="guideToggle1" type="button" aria-expanded="false">
+        <span class="gt-ico">?</span>
+        <span class="gt-label">Xem hướng dẫn cách dùng</span>
+        <span class="gt-arrow">▼</span>
+      </button>
+      <div class="guide-wrap" id="guideWrap1">
+       <div class="guide-inner">
+        <div class="guide">
+          <b>Cách dùng:</b>
+          <ol>
+            <li>Trong Excel/Google Sheets, bôi đen <b>2 cột</b> <code>order_sn</code> và <code>product_info</code>, nhấn <code>Ctrl + C</code>.</li>
+            <li>Nhấp vào <b>ô đầu tiên</b> của lưới bên dưới, nhấn <code>Ctrl + V</code> — dữ liệu tự rải vào đúng 2 cột, đủ số hàng.</li>
+            <li>Bấm <b>Xử lý dữ liệu</b>. Bảng kết quả hiện ngay bên dưới.</li>
+            <li>Trong bảng kết quả: <b>nhấp đúp</b> một ô để sửa (giống Excel). Chỉ một lần nhấp thì chỉ chọn ô, không sửa được — tránh bấm lộn làm hỏng dữ liệu.</li>
+            <li><b>Kéo chuột</b> để bôi đen nhiều ô rồi <code>Ctrl + C</code> để copy như Excel.</li>
+            <li>Lỡ tay xóa hoặc sửa nhầm? Nhấn <code>Ctrl + Z</code> để <b>hoàn tác</b> (nhiều bước), <code>Ctrl + Y</code> để <b>làm lại</b>. Bôi đen ô rồi nhấn <code>Delete</code> để xóa nội dung.</li>
+          </ol>
+        </div>
+       </div>
       </div>
 
-      <div class="grid-input">
+      <div class="grid-host" id="gridHost1">
+      <div class="grid-input" id="gridInput1">
         <div class="grid-input-head">
           <div>order_sn (Mã đơn hàng)</div>
           <div>product_info (Thông tin chi tiết)</div>
@@ -475,10 +757,12 @@
           <!-- các hàng nhập sinh bằng JS -->
         </div>
       </div>
+      </div>
       <div class="grid-tip">💡 Dán (Ctrl+V) vào ô bất kỳ — dữ liệu nhiều hàng nhiều cột sẽ tự rải đúng vị trí. Lưới tự thêm hàng trống khi cần. <b>Kéo chuột</b> bôi đen nhiều ô rồi <code>Ctrl+C</code> để copy. Rê chuột vào một dòng để hiện nút <b style="color:#0f9d58">+</b> (chèn dòng dưới) và <b style="color:#d8584a">−</b> (xóa dòng).</div>
 
       <div class="actions">
         <button class="btn btn-primary" id="btnProcess">▶ Xử lý dữ liệu</button>
+        <button class="btn btn-edit" id="btnEdit1">✏️ Chỉnh sửa dữ liệu</button>
         <button class="btn btn-ghost" id="btnUndo">↩ Hoàn tác</button>
         <button class="btn btn-ghost" id="btnRedo">↪ Làm lại</button>
         <button class="btn btn-ghost" id="btnClear">✕ Xóa trắng</button>
@@ -492,7 +776,7 @@
   <!-- ===== VÙNG KẾT QUẢ ===== -->
   <div class="card">
     <div class="card-head">
-      <div class="title"><span class="step">2</span> Kết quả</div>
+      <div class="title" id="sec-p-result"><span class="step">2</span> Kết quả</div>
       <button class="btn btn-ok" id="btnCopy" disabled>⧉ Copy bảng</button>
     </div>
     <div class="card-body">
@@ -520,7 +804,7 @@
     <!-- Vùng nhập 4 cột -->
     <div class="card" id="createInputCard">
       <div class="card-head">
-        <div class="title"><span class="step">1</span> Nhập dữ liệu đơn hàng</div>
+        <div class="title" id="sec-c-input"><span class="step">1</span> Nhập dữ liệu đơn hàng</div>
         <button class="btn btn-ghost no-print" id="btnRefreshMisa">🔄 Làm mới dữ liệu MISA</button>
       </div>
       <div class="card-body">
@@ -530,17 +814,27 @@
           <span id="misaStatusText">Đang tải dữ liệu MISA…</span>
         </div>
 
-        <div class="guide">
-          <b>Cách dùng:</b>
-          <ol>
-            <li>Dán <b>4 cột</b> <code>Order_ID</code> · <code>SKU</code> · <code>Quantity</code> · <code>Price</code> vào lưới bên dưới (Ctrl+V).</li>
-            <li>Bấm <b>Tạo đơn hàng</b>. App tự tra <b>Tên sản phẩm</b> và <b>Vị trí</b> theo SKU từ dữ liệu MISA.</li>
-            <li>Mỗi đơn hiển thị một bảng (đã sắp xếp theo Vị trí A→Z). Xem trước rồi bấm <b>In đơn hàng</b>.</li>
-            <li>Sửa ô: <b>nhấp đúp</b> (giống Excel). Một lần nhấp chỉ chọn ô — tránh bấm lộn. <code>Ctrl+Z</code> hoàn tác.</li>
-          </ol>
+        <button class="guide-toggle" id="guideToggle2" type="button" aria-expanded="false">
+          <span class="gt-ico">?</span>
+          <span class="gt-label">Xem hướng dẫn cách dùng</span>
+          <span class="gt-arrow">▼</span>
+        </button>
+        <div class="guide-wrap" id="guideWrap2">
+         <div class="guide-inner">
+          <div class="guide">
+            <b>Cách dùng:</b>
+            <ol>
+              <li>Dán <b>4 cột</b> <code>Order_ID</code> · <code>SKU</code> · <code>Quantity</code> · <code>Price</code> vào lưới bên dưới (Ctrl+V).</li>
+              <li>Bấm <b>Tạo đơn hàng</b>. App tự tra <b>Tên sản phẩm</b> và <b>Vị trí</b> theo SKU từ dữ liệu MISA.</li>
+              <li>Mỗi đơn hiển thị một bảng (đã sắp xếp theo Vị trí A→Z). Xem trước rồi bấm <b>In đơn hàng</b>.</li>
+              <li>Sửa ô: <b>nhấp đúp</b> (giống Excel). Một lần nhấp chỉ chọn ô — tránh bấm lộn. <code>Ctrl+Z</code> hoàn tác.</li>
+            </ol>
+          </div>
+         </div>
         </div>
 
-        <div class="grid-input">
+        <div class="grid-host" id="gridHost2">
+        <div class="grid-input" id="gridInput2">
           <div class="grid4-head">
             <div>Order_ID (Mã đơn)</div>
             <div>SKU (Mã sản phẩm)</div>
@@ -549,10 +843,12 @@
           </div>
           <div class="grid-scroll" id="grid4Scroll"></div>
         </div>
+        </div>
         <div class="grid-tip">💡 Dán (Ctrl+V) vào ô bất kỳ — dữ liệu 4 cột tự rải đúng vị trí. Lưới tự thêm hàng khi cần. <b>Kéo chuột</b> bôi đen nhiều ô rồi <code>Ctrl+C</code> để copy. Rê chuột vào một dòng để hiện nút <b style="color:#0f9d58">+</b> (chèn dòng dưới) và <b style="color:#d8584a">−</b> (xóa dòng).</div>
 
         <div class="actions">
           <button class="btn btn-primary" id="btnCreate">🧾 Tạo đơn hàng</button>
+          <button class="btn btn-edit" id="btnEdit2">✏️ Chỉnh sửa dữ liệu</button>
           <button class="btn btn-ghost" id="btnUndo2">↩ Hoàn tác</button>
           <button class="btn btn-ghost" id="btnRedo2">↪ Làm lại</button>
           <button class="btn btn-ghost" id="btnClear2">✕ Xóa trắng</button>
@@ -565,7 +861,7 @@
     <!-- Vùng đơn hàng / xem trước in -->
     <div class="card">
       <div class="card-head">
-        <div class="title"><span class="step">2</span> Đơn hàng (xem trước in)</div>
+        <div class="title" id="sec-c-invoice"><span class="step">2</span> Đơn hàng (xem trước in)</div>
         <button class="btn btn-ok no-print" id="btnPrint" disabled>🖨 In đơn hàng</button>
       </div>
       <div class="card-body">
@@ -587,6 +883,31 @@
 </div>
 
 <div class="toast-zone" id="toastZone"></div>
+
+<!-- ===== CỬA SỔ CHỈNH SỬA DỮ LIỆU (toàn màn hình, kiểu Google Sheets) ===== -->
+<div class="editor-overlay" id="editorOverlay" aria-hidden="true">
+  <div class="editor-modal" role="dialog" aria-modal="true">
+    <div class="editor-head">
+      <div class="editor-title">
+        <span class="editor-ico">✏️</span>
+        <span id="editorTitleText">Chỉnh sửa dữ liệu</span>
+      </div>
+      <div class="editor-actions">
+        <button class="btn btn-ghost ed-btn" id="edUndo" type="button">↩ Hoàn tác</button>
+        <button class="btn btn-ghost ed-btn" id="edRedo" type="button">↪ Làm lại</button>
+        <button class="btn btn-ghost ed-btn" id="edAddRow" type="button">＋ Thêm dòng</button>
+        <button class="btn btn-ok ed-btn" id="edDone" type="button">✓ Xong</button>
+      </div>
+    </div>
+    <div class="editor-hint">
+      Thao tác như Google Sheets: <b>click</b> chọn ô · <b>nhấp đúp</b> để sửa · <b>kéo</b> bôi đen vùng · <code>Ctrl+C</code>/<code>Ctrl+V</code> copy &amp; dán · <code>Delete</code> xóa nội dung · <code>Ctrl+Z</code>/<code>Ctrl+Y</code> hoàn tác. Mọi thay đổi được lưu ngay.
+    </div>
+    <div class="editor-body" id="editorBody">
+      <!-- lưới gốc được CHUYỂN vào đây khi mở, trả về chỗ cũ khi đóng -->
+    </div>
+  </div>
+</div>
+
 
 <script>
 /* =========================================================================
@@ -906,13 +1227,43 @@ function makeRow(orderVal, infoVal){
 
   [t1, t2].forEach(function(ta){
     ta.addEventListener('paste', onCellPaste);
-    // lưu undo MỘT LẦN cho mỗi "phiên gõ" (lần gõ đầu sau khi focus)
-    ta.addEventListener('beforeinput', function(){
+    // Chốt chặn cứng: ô đang khóa (chưa nhấp đúp) -> chặn phím ký tự ngay từ keydown.
+    // Cho phép: Delete/Backspace (xóa vùng), phím điều hướng, tổ hợp Ctrl/Cmd (copy...).
+    ta.addEventListener('keydown', function(e){
+      if(ta.classList.contains('editing')) return;       // đang sửa: cho gõ
+      if(!ta.readOnly) return;                            // ô trống mở: cho gõ
+      if(e.ctrlKey || e.metaKey || e.altKey) return;      // tổ hợp phím: để các handler khác lo
+      var allow = ['Delete','Backspace','ArrowLeft','ArrowRight','ArrowUp','ArrowDown',
+                   'Tab','Escape','Home','End','PageUp','PageDown','Shift','Control','Alt','Meta'];
+      if(allow.indexOf(e.key) === -1){
+        e.preventDefault();   // chặn mọi phím ký tự làm thay đổi ô khóa
+      }
+    });
+    // CHẶN COMPOSITION (bộ gõ tiếng Việt Telex/VNI): đây là đường mà phím
+    // a/w/d/e... dùng để ghép â/ă/đ/ê, lách qua readOnly và preventDefault.
+    // Nếu ô đang khóa -> huỷ ngay và bỏ focus để bộ gõ không xóa nội dung.
+    ta.addEventListener('compositionstart', function(e){
+      if(!ta.classList.contains('editing') && ta.readOnly){
+        ta.blur();   // rời ô -> bộ gõ không còn đích để tác động
+      }
+    });
+    ta.addEventListener('beforeinput', function(e){
+      if(!ta.classList.contains('editing') && ta.readOnly){
+        e.preventDefault();
+        return;
+      }
       if(!ta._dirtySession){ ta._dirtySession = true; pushUndo(); }
     });
-    ta.addEventListener('input', function(){ autoGrow(ta); ensureTrailingRow(); updateCounter(); });
+    ta.addEventListener('input', function(){
+      // Lưới an toàn cuối: nếu vì lý do nào đó (bộ gõ) input lọt vào ô đang KHÓA,
+      // hoàn nguyên giá trị cũ ngay, không cho mất dữ liệu.
+      if(!ta.classList.contains('editing') && ta.readOnly){
+        if(typeof ta._lockedValue === 'string'){ ta.value = ta._lockedValue; }
+        return;
+      }
+      autoGrow(ta); ensureTrailingRow(); updateCounter();
+    });
     ta.addEventListener('blur', function(){ ta._dirtySession = false; });
-    // KHÓA AN TOÀN: ô đã có dữ liệu thì mặc định không cho gõ; phải nhấp đúp mới mở.
     refreshLock(ta);
   });
   return row;
@@ -986,8 +1337,10 @@ function refreshLock(ta){
   if(ta.classList.contains('editing')) return; // đang chủ động sửa thì để yên
   if(ta.value.trim() === ''){
     ta.readOnly = false; ta.classList.remove('locked'); ta.classList.remove('editing');
+    ta._lockedValue = undefined;
   } else {
     ta.readOnly = true; ta.classList.add('locked'); ta.classList.remove('editing');
+    ta._lockedValue = ta.value;   // ghi nhớ giá trị gốc để hoàn nguyên nếu bộ gõ tác động
   }
 }
 
@@ -1743,14 +2096,9 @@ function switchTab(name){
   });
   document.getElementById('tab-process').classList.toggle('active', name === 'process');
   document.getElementById('tab-create').classList.toggle('active', name === 'create');
-  var title=document.getElementById('appTitle'), sub=document.getElementById('appSub');
-  if(name==='create'){
-    title.textContent='ZinZinMotor · Tạo Đơn Hàng';
-    sub.textContent='Nhập Order_ID · SKU · Quantity · Price → tự tạo đơn kèm tên & vị trí để in';
-  } else {
-    title.textContent='ZinZinMotor · Xử Lý Đơn';
-    sub.textContent='Dán dữ liệu Shopee → tách SKU · Số lượng · Giá bán';
-  }
+  document.body.setAttribute('data-tab', name); // để CSS hiện đúng bộ nút cuộn nhanh
+  // cập nhật icon nút tròn nổi cho khớp tab đang chọn
+  if(typeof window.updateFabIcon === 'function') window.updateFabIcon();
 }
 document.getElementById('tabBtnProcess').addEventListener('click', function(){ switchTab('process'); });
 document.getElementById('tabBtnCreate').addEventListener('click', function(){
@@ -1892,10 +2240,32 @@ function c2MakeRow(vals){
     row.appendChild(cell);
     (function(ta){
       ta.addEventListener('paste', c2OnPaste);
-      ta.addEventListener('beforeinput', function(){
+      ta.addEventListener('keydown', function(e){
+        if(ta.classList.contains('editing')) return;
+        if(!ta.readOnly) return;
+        if(e.ctrlKey || e.metaKey || e.altKey) return;
+        var allow = ['Delete','Backspace','ArrowLeft','ArrowRight','ArrowUp','ArrowDown',
+                     'Tab','Escape','Home','End','PageUp','PageDown','Shift','Control','Alt','Meta'];
+        if(allow.indexOf(e.key) === -1){ e.preventDefault(); }
+      });
+      // chặn composition (bộ gõ tiếng Việt) trên ô khóa
+      ta.addEventListener('compositionstart', function(e){
+        if(!ta.classList.contains('editing') && ta.readOnly){ ta.blur(); }
+      });
+      ta.addEventListener('beforeinput', function(e){
+        if(!ta.classList.contains('editing') && ta.readOnly){
+          e.preventDefault();
+          return;
+        }
         if(!ta._dirty){ ta._dirty = true; c2PushUndo(); }
       });
-      ta.addEventListener('input', function(){ c2AutoGrow(ta); c2EnsureTrailing(); c2UpdateCounter(); });
+      ta.addEventListener('input', function(){
+        if(!ta.classList.contains('editing') && ta.readOnly){
+          if(typeof ta._lockedValue === 'string'){ ta.value = ta._lockedValue; }
+          return;
+        }
+        c2AutoGrow(ta); c2EnsureTrailing(); c2UpdateCounter();
+      });
       ta.addEventListener('blur', function(){ ta._dirty = false; ta.classList.remove('editing'); c2RefreshLock(ta); });
       c2RefreshLock(ta);
     })(ta);
@@ -1929,8 +2299,8 @@ function deleteRow_grid2(rowEl){
 function c2AutoGrow(ta){ ta.style.height='auto'; ta.style.height=Math.max(38,ta.scrollHeight)+'px'; }
 function c2RefreshLock(ta){
   if(ta.classList.contains('editing')) return;
-  if(ta.value.trim()===''){ ta.readOnly=false; ta.classList.remove('locked'); }
-  else { ta.readOnly=true; ta.classList.add('locked'); }
+  if(ta.value.trim()===''){ ta.readOnly=false; ta.classList.remove('locked'); ta._lockedValue=undefined; }
+  else { ta.readOnly=true; ta.classList.add('locked'); ta._lockedValue=ta.value; }
 }
 function c2Unlock(ta){ ta.readOnly=false; ta.classList.remove('locked'); ta.classList.add('editing'); ta.focus(); var v=ta.value; ta.value=''; ta.value=v; }
 
@@ -2317,6 +2687,220 @@ document.addEventListener('mousedown', function(e){
 c2InitGrid();
 c2AttachGridEvents();
 c2UpdateCounter();
+
+/* =========================================================================
+   GIAO DIỆN V9: bật/tắt hướng dẫn + hiệu ứng header dính khi cuộn
+   ========================================================================= */
+/* Bật/tắt khối hướng dẫn (mặc định ẩn) */
+function setupGuideToggle(btnId, wrapId){
+  var btn = document.getElementById(btnId);
+  var wrap = document.getElementById(wrapId);
+  if(!btn || !wrap) return;
+  btn.addEventListener('click', function(){
+    var open = wrap.classList.toggle('open');
+    btn.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    btn.querySelector('.gt-label').textContent = open ? 'Ẩn hướng dẫn' : 'Xem hướng dẫn cách dùng';
+  });
+}
+setupGuideToggle('guideToggle1', 'guideWrap1');
+setupGuideToggle('guideToggle2', 'guideWrap2');
+
+/* =========================================================================
+   THANH ĐIỀU HƯỚNG TỰ ẨN/HIỆN (V10)
+   - Ở đầu trang: thanh hiện bình thường, nút tròn ẩn.
+   - Khi cuộn xuống quá ngưỡng: thanh trượt lên ẩn, nút tròn hiện ra.
+   - Rê chuột vào nút tròn HOẶC vùng sát mép trên -> thanh trượt xuống (peek).
+   - Rời chuột khỏi thanh + nút + vùng trên -> thanh ẩn lại.
+   - Icon nút tròn đổi theo tab đang chọn.
+   Chỉ điều khiển giao diện, không đụng dữ liệu/thuật toán.
+   ========================================================================= */
+(function(){
+  var shell   = document.getElementById('navShell');
+  var fab     = document.getElementById('navFab');
+  var hotzone = document.getElementById('navHotzone');
+  var fabIco  = document.getElementById('fabIco');
+  if(!shell || !fab || !hotzone) return;
+
+  var SCROLL_TRIGGER = 80;   // cuộn quá mức này thì bật chế độ tự ẩn
+  var scrolled = false;      // đang ở trạng thái đã cuộn?
+  var peeking  = false;      // thanh đang được "gọi" hiện ra?
+  var overNav  = false;      // chuột đang trên thanh/nút/vùng trên?
+  var hideTimer = null;
+
+  function apply(){
+    if(!scrolled){
+      // ở đầu trang: thanh ở GIỮA như cũ, ẩn nút tròn
+      shell.classList.remove('docked-right');
+      shell.classList.remove('hidden');
+      shell.classList.remove('peek');
+      fab.classList.remove('show');
+      hotzone.classList.remove('armed');
+      return;
+    }
+    // đã cuộn: thanh chuyển sang neo GÓC PHẢI (thả ra từ chỗ nút tròn)
+    shell.classList.add('docked-right');
+    hotzone.classList.add('armed');
+    if(peeking || overNav){
+      shell.classList.remove('hidden');
+      shell.classList.add('peek');
+      fab.classList.remove('show');     // đang mở thanh thì ẩn nút tròn
+    } else {
+      shell.classList.add('hidden');
+      shell.classList.remove('peek');
+      fab.classList.add('show');
+    }
+  }
+
+  function onScroll(){
+    var now = window.scrollY > SCROLL_TRIGGER;
+    if(now !== scrolled){ scrolled = now; if(!scrolled) peeking = false; apply(); }
+  }
+  window.addEventListener('scroll', onScroll, { passive:true });
+
+  function openNav(){ peeking = true; if(hideTimer){ clearTimeout(hideTimer); hideTimer=null; } apply(); }
+  function scheduleClose(){
+    if(hideTimer) clearTimeout(hideTimer);
+    hideTimer = setTimeout(function(){
+      if(!overNav){ peeking = false; apply(); }
+    }, 260); // trễ nhẹ để di chuột từ nút sang thanh không bị đóng
+  }
+
+  // Nút tròn: rê vào hoặc bấm -> mở
+  fab.addEventListener('mouseenter', openNav);
+  fab.addEventListener('click', openNav);
+  // Vùng cảm ứng sát mép trên -> mở
+  hotzone.addEventListener('mouseenter', openNav);
+
+  // Theo dõi chuột trên thanh + nút để biết còn "ở trong" không
+  [shell, fab, hotzone].forEach(function(el){
+    el.addEventListener('mouseenter', function(){ overNav = true; if(hideTimer){clearTimeout(hideTimer);hideTimer=null;} });
+    el.addEventListener('mouseleave', function(){ overNav = false; scheduleClose(); });
+  });
+
+  // Khi bấm chọn 1 tab thì giữ thanh mở thêm chút rồi đóng (cho cảm giác phản hồi)
+  shell.addEventListener('click', function(){ openNav(); scheduleClose(); });
+
+  // Đồng bộ icon nút tròn theo tab đang active
+  window.updateFabIcon = function(){
+    var activeBtn = document.querySelector('.tab-btn.active .tab-ico');
+    if(activeBtn && fabIco) fabIco.textContent = activeBtn.textContent;
+  };
+  window.updateFabIcon();
+
+  apply();
+})();
+
+/* =========================================================================
+   NÚT CUỘN NHANH — cuộn mượt tới phần tương ứng (chỉ điều hướng giao diện)
+   ========================================================================= */
+(function(){
+  var qn = document.getElementById('quicknav');
+  if(!qn) return;
+  qn.addEventListener('click', function(e){
+    var btn = e.target.closest('.qn-item');
+    if(!btn) return;
+    var id = btn.getAttribute('data-target');
+    var el = document.getElementById(id);
+    if(!el) return;
+    // cuộn sao cho tiêu đề phần nằm gần đầu màn hình, chừa khoảng trống nhỏ
+    var card = el.closest('.card') || el;
+    var y = card.getBoundingClientRect().top + window.scrollY - 16;
+    window.scrollTo({ top: y < 0 ? 0 : y, behavior: 'smooth' });
+  });
+})();
+
+/* =========================================================================
+   CỬA SỔ CHỈNH SỬA DỮ LIỆU (V14)
+   Nguyên tắc: KHÔNG sao chép dữ liệu. Khi mở, DI CHUYỂN lưới gốc (.grid-input)
+   từ chỗ cũ vào trong modal; khi đóng, TRẢ về đúng chỗ cũ. Vì vậy mọi thao
+   tác trong modal chính là thao tác trên lưới thật -> ghi ngay, không lệch
+   dữ liệu, không đụng logic xử lý.
+   ========================================================================= */
+(function(){
+  var overlay = document.getElementById('editorOverlay');
+  var body    = document.getElementById('editorBody');
+  var titleEl = document.getElementById('editorTitleText');
+  if(!overlay || !body) return;
+
+  var current = null; // { which:'grid1'|'grid2', input:Element, host:Element }
+
+  function openEditor(which){
+    var inputId = (which === 'grid1') ? 'gridInput1' : 'gridInput2';
+    var hostId  = (which === 'grid1') ? 'gridHost1'  : 'gridHost2';
+    var input = document.getElementById(inputId);
+    var host  = document.getElementById(hostId);
+    if(!input || !host) return;
+
+    current = { which:which, input:input, host:host };
+    titleEl.textContent = (which === 'grid1')
+      ? 'Chỉnh sửa dữ liệu — Dán dữ liệu đơn hàng'
+      : 'Chỉnh sửa dữ liệu — Nhập dữ liệu đơn hàng';
+
+    // chuyển lưới gốc vào modal
+    body.appendChild(input);
+    overlay.classList.add('open');
+    overlay.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden'; // khóa cuộn nền
+  }
+
+  function closeEditor(){
+    if(!current) return;
+    // trả lưới về đúng chỗ cũ
+    current.host.appendChild(current.input);
+    overlay.classList.remove('open');
+    overlay.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    current = null;
+  }
+
+  // Mở từ 2 nút
+  var b1 = document.getElementById('btnEdit1');
+  var b2 = document.getElementById('btnEdit2');
+  if(b1) b1.addEventListener('click', function(){ openEditor('grid1'); });
+  if(b2) b2.addEventListener('click', function(){ openEditor('grid2'); });
+
+  // Đóng: nút Xong, click nền tối, phím Esc
+  document.getElementById('edDone').addEventListener('click', closeEditor);
+  overlay.addEventListener('mousedown', function(e){
+    if(e.target === overlay) closeEditor(); // chỉ khi bấm ra vùng nền tối
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && overlay.classList.contains('open')){
+      // không đóng nếu đang sửa 1 ô (để Esc hủy sửa ô trước)
+      var editingCell = document.querySelector('#editorBody textarea.editing, #editorBody .cell-input');
+      if(!editingCell) closeEditor();
+    }
+  });
+
+  // Các nút trong modal -> gọi đúng chức năng của lưới đang sửa
+  document.getElementById('edUndo').addEventListener('click', function(){
+    if(!current) return;
+    if(current.which === 'grid1'){ if(typeof doUndo==='function') doUndo(); }
+    else { if(typeof c2DoUndo==='function') c2DoUndo(); }
+  });
+  document.getElementById('edRedo').addEventListener('click', function(){
+    if(!current) return;
+    if(current.which === 'grid1'){ if(typeof doRedo==='function') doRedo(); }
+    else { if(typeof c2DoRedo==='function') c2DoRedo(); }
+  });
+  document.getElementById('edAddRow').addEventListener('click', function(){
+    if(!current) return;
+    // thêm 1 dòng trống vào cuối lưới tương ứng (dùng hàm make sẵn có)
+    if(current.which === 'grid1'){
+      var s1=document.getElementById('gridScroll');
+      if(typeof pushUndo==='function') pushUndo();
+      s1.appendChild(makeRow('',''));
+      if(typeof updateCounter==='function') updateCounter();
+    } else {
+      var s2=document.getElementById('grid4Scroll');
+      if(typeof c2PushUndo==='function') c2PushUndo();
+      s2.appendChild(c2MakeRow());
+      if(typeof c2UpdateCounter==='function') c2UpdateCounter();
+    }
+    toast('Đã thêm 1 dòng ở cuối.', 'ok');
+  });
+})();
 </script>
 </body>
 </html>
