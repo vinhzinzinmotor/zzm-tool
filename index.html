@@ -2184,7 +2184,7 @@ document.addEventListener('keydown', function(e){
    - Gom theo Order_ID, GIỮ thứ tự xuất hiện đầu tiên (như input)
    - Trong mỗi đơn: sắp Location A→Z, dòng trống Location đẩy xuống cuối
    - Tra Product_Name & Location theo SKU từ MISA (không thấy -> để trống)
-   - Total Price = Σ(Price × Qty)
+   - Total Price = Σ(Price)  [tổng cột Price, KHÔNG nhân Quantity]
    ========================================================================= */
 function c2NormPriceNum(raw){
   if(raw==null) return 0;
@@ -2242,7 +2242,8 @@ function createInvoices(){
       if(la>lb) return 1;
       return 0;
     });
-    var total=items.reduce(function(s,it){ return s + it.price*it.qty; },0);
+    // Total Price = TỔNG các giá trị Price trong đơn (KHÔNG nhân Quantity)
+    var total=items.reduce(function(s,it){ return s + it.price; },0);
     return { oid:oid, items:items, total:total };
   });
 
