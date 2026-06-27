@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Xử Lý Đơn Hàng → SKU · ZinZinMotor</title>
+<title>VẬN HÀNH ZZM</title>
 <style>
   /* ===== Design tokens ===== */
   :root{
@@ -97,7 +97,7 @@
   .grid-scroll{max-height:340px;overflow:auto;background:#fff;user-select:none}
   .grid-row{
     display:grid;grid-template-columns:240px 1fr;
-    border-bottom:1px solid var(--line);
+    border-bottom:1px solid var(--line);position:relative;
   }
   .grid-row:last-child{border-bottom:none}
   /* xen kẽ màu hai dòng kế tiếp (zebra) */
@@ -129,6 +129,40 @@
   .grid-cell textarea::placeholder{color:#aebacb}
   .row-num{
     position:absolute;left:-1px;top:0;width:0;
+  }
+
+  /* =========================================================
+     NÚT CHÈN / XÓA DÒNG (dùng chung cho cả 2 lưới nhập)
+     Ẩn mờ bình thường, hiện rõ khi rê chuột vào dòng.
+     ========================================================= */
+  .row-ctrls{
+    position:absolute; top:0; right:0; height:100%;
+    display:flex; align-items:center; gap:3px;
+    padding:0 5px; z-index:6;
+    opacity:0; transition:opacity .15s ease;
+    pointer-events:none;            /* khi mờ thì không chắn chuột */
+  }
+  .grid-row:hover .row-ctrls,
+  .grid4-row:hover .row-ctrls{
+    opacity:1; pointer-events:auto;
+  }
+  .row-ctrls button{
+    width:20px; height:20px; border:none; border-radius:6px;
+    font-size:14px; font-weight:800; line-height:1; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; box-shadow:0 1px 3px rgba(0,0,0,.25);
+    transition:transform .08s ease, background .12s ease;
+    font-family:var(--sans);
+  }
+  .row-ctrls button:active{ transform:scale(.88); }
+  .row-ctrls .btn-add{ background:var(--ok); }
+  .row-ctrls .btn-add:hover{ background:#0c8a4d; }
+  .row-ctrls .btn-del{ background:#d8584a; }
+  .row-ctrls .btn-del:hover{ background:#c0392b; }
+  /* chừa chỗ bên phải textarea cột cuối để nút không che chữ khi hover */
+  .grid-row:hover .grid-cell:last-child textarea,
+  .grid4-row:hover .grid4-cell:last-child textarea{
+    padding-right:52px;
   }
   /* nút thêm hàng / dán nhanh */
   .grid-tip{
@@ -256,6 +290,135 @@
     .actions{flex-direction:column;align-items:stretch}
     .counter{margin-left:0;text-align:center}
   }
+
+  /* =========================================================
+     THANH TAB CHUYỂN CHỨC NĂNG
+     ========================================================= */
+  .tabbar{
+    display:flex;gap:8px;margin-bottom:18px;background:rgba(255,255,255,.08);
+    padding:6px;border-radius:12px;backdrop-filter:blur(4px);width:fit-content;
+  }
+  .tab-btn{
+    border:none;background:transparent;color:#cfe0ff;cursor:pointer;
+    font-family:var(--sans);font-size:15px;font-weight:700;
+    padding:10px 22px;border-radius:9px;display:flex;align-items:center;gap:8px;
+    transition:background .15s ease,color .15s ease,box-shadow .15s ease;
+  }
+  .tab-btn:hover{background:rgba(255,255,255,.10)}
+  .tab-btn.active{
+    background:#fff;color:var(--accent-deep);
+    box-shadow:0 4px 12px rgba(0,0,0,.2);
+  }
+  .tab-btn .tab-ico{font-size:17px}
+  .tab-pane{display:none}
+  .tab-pane.active{display:block;animation:fadeIn .25s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+  /* =========================================================
+     CHỨC NĂNG 2 — TẠO ĐƠN HÀNG
+     ========================================================= */
+  /* trạng thái dữ liệu MISA */
+  .misa-status{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    font-size:13px;font-weight:600;margin-bottom:14px;
+    padding:10px 14px;border-radius:9px;border:1px solid var(--line);
+    background:#f7f9fc;
+  }
+  .misa-status .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
+  .misa-status.ok{background:var(--ok-bg);border-color:#bfe6cf}
+  .misa-status.ok .dot{background:var(--ok)}
+  .misa-status.loading{background:#fff7e6;border-color:var(--warn-line)}
+  .misa-status.loading .dot{background:var(--warn);animation:pulse 1s infinite}
+  .misa-status.err{background:#fdecec;border-color:#f5b5b5}
+  .misa-status.err .dot{background:#d83a3a}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .misa-status .muted{color:var(--ink-soft);font-weight:500}
+
+  /* lưới nhập 4 cột cho chức năng 2 */
+  .grid4-head,.grid4-row{
+    display:grid;
+    grid-template-columns:200px 200px 90px 120px;
+  }
+  .grid4-head{
+    background:var(--head);color:#cfe0ff;font-weight:700;font-size:13px;
+  }
+  .grid4-head>div{padding:10px 14px;border-right:1px solid #21436e}
+  .grid4-head>div:last-child{border-right:none}
+  .grid4-row{border-bottom:1px solid var(--line);position:relative}
+  .grid4-row:last-child{border-bottom:none}
+  .grid4-row:nth-child(even){background:var(--row-zebra)}
+  .grid4-row:hover{background:var(--row-hover)}
+  .grid4-row.row-active{background:#e8f1ff}
+  .grid4-cell{padding:0;border-right:1px solid var(--line);position:relative}
+  .grid4-cell:last-child{border-right:none}
+  .grid4-cell textarea{
+    width:100%;border:none;outline:none;resize:none;display:block;
+    font-family:var(--mono);font-size:13px;line-height:1.55;
+    padding:8px 12px;color:var(--ink);background:transparent;
+    min-height:38px;overflow:hidden;white-space:pre-wrap;word-break:break-word;cursor:cell;
+  }
+  .grid4-cell textarea.editing{cursor:text}
+  .grid4-cell.col-oid textarea{color:#0b4fc4;font-weight:600}
+  .grid4-cell.cell-selected{background:var(--sel)}
+  .grid4-cell.cell-anchor{box-shadow:inset 0 0 0 2px var(--sel-border)}
+  .grid4-cell textarea.editing:focus{background:#fff;box-shadow:inset 0 0 0 2px var(--ok)}
+  @media (max-width:640px){
+    .grid4-head,.grid4-row{grid-template-columns:110px 110px 56px 80px}
+  }
+
+  /* =========================================================
+     KHU VỰC ĐƠN HÀNG (xem trước trên web)
+     ========================================================= */
+  #invoiceArea{margin-top:4px}
+  .invoice{
+    border:2px solid #111;border-radius:6px;margin-bottom:22px;overflow:hidden;
+    background:#fff;
+  }
+  .invoice-head{
+    padding:10px 14px;border-bottom:2px solid #111;font-size:17px;color:#111;
+  }
+  .invoice-head .oid-label{font-weight:500}
+  .invoice-head .oid-value{font-weight:800}
+  table.inv-table{border-collapse:collapse;width:100%;color:#111}
+  table.inv-table th,table.inv-table td{
+    border:1px solid #111;padding:7px 9px;vertical-align:middle;
+  }
+  table.inv-table th{
+    font-size:12px;font-weight:700;text-align:center;background:#fff;
+  }
+  table.inv-table td.i-sku{font-family:var(--mono);font-size:15px;font-weight:700;white-space:nowrap}
+  table.inv-table td.i-loc{font-size:15px;font-weight:700;text-align:center;white-space:nowrap}
+  table.inv-table td.i-qty{font-size:18px;font-weight:800;text-align:center}
+  table.inv-table td.i-name{font-size:12px;line-height:1.35}
+  table.inv-table td.i-note{width:34px}
+  .inv-total{
+    padding:9px 14px;text-align:right;font-size:16px;font-weight:800;color:#111;
+    border-top:2px solid #111;
+  }
+  .inv-total .num{margin-left:10px}
+
+  /* =========================================================
+     CHẾ ĐỘ IN — A6 dọc, chỉ đen trắng
+     ========================================================= */
+  @media print{
+    @page{ size:A6 portrait; margin:6mm; }
+    body{background:#fff !important;padding:0 !important}
+    /* ẩn mọi thứ trừ khu in */
+    .topbar,.tabbar,.card-head,.guide,.grid-tip,.actions,.misa-status,
+    .grid-input,.lock-hint,.result-meta,.toast-zone,#createInputCard .card-body>*:not(#invoiceArea),
+    .no-print{ display:none !important; }
+    .card{box-shadow:none !important;border-radius:0 !important;margin:0 !important;background:#fff !important}
+    .card-body{padding:0 !important}
+    #invoiceArea{margin:0 !important}
+    .invoice{
+      border:1.5px solid #000;border-radius:0;margin:0 0 4mm 0;
+      page-break-after:always;break-after:page;
+    }
+    .invoice:last-child{page-break-after:auto;break-after:auto}
+    /* tránh cắt ngang một dòng sản phẩm khi sang trang */
+    table.inv-table tr{page-break-inside:avoid;break-inside:avoid}
+    .invoice-head{break-after:avoid}
+  }
 </style>
 </head>
 <body>
@@ -264,10 +427,25 @@
   <div class="topbar">
     <div class="logo">ZZ</div>
     <div>
-      <h1>Xử Lý Đơn Hàng → Bảng SKU</h1>
-      <p>Dán dữ liệu từ Excel · Bấm một nút · Nhận ngay bảng SKU – Số lượng – Giá bán</p>
+      <h1 id="appTitle">ZinZinMotor · Xử Lý Đơn</h1>
+      <p id="appSub">Dán dữ liệu Shopee → tách SKU · Số lượng · Giá bán</p>
     </div>
   </div>
+
+  <!-- ===== THANH TAB CHỌN CHỨC NĂNG ===== -->
+  <div class="tabbar">
+    <button class="tab-btn active" id="tabBtnProcess" data-tab="process">
+      <span class="tab-ico">📋</span> Xử Lý Đơn
+    </button>
+    <button class="tab-btn" id="tabBtnCreate" data-tab="create">
+      <span class="tab-ico">🧾</span> Tạo Đơn Hàng
+    </button>
+  </div>
+
+  <!-- ============================================================
+       TAB 1 — XỬ LÝ ĐƠN (giữ nguyên chức năng V4)
+       ============================================================ -->
+  <div class="tab-pane active" id="tab-process">
 
   <!-- ===== VÙNG NHẬP — LƯỚI 2 CỘT ===== -->
   <div class="card">
@@ -297,7 +475,7 @@
           <!-- các hàng nhập sinh bằng JS -->
         </div>
       </div>
-      <div class="grid-tip">💡 Dán (Ctrl+V) vào ô bất kỳ — dữ liệu nhiều hàng nhiều cột sẽ tự rải đúng vị trí. Lưới tự thêm hàng trống khi cần.</div>
+      <div class="grid-tip">💡 Dán (Ctrl+V) vào ô bất kỳ — dữ liệu nhiều hàng nhiều cột sẽ tự rải đúng vị trí. Lưới tự thêm hàng trống khi cần. <b>Kéo chuột</b> bôi đen nhiều ô rồi <code>Ctrl+C</code> để copy. Rê chuột vào một dòng để hiện nút <b style="color:#0f9d58">+</b> (chèn dòng dưới) và <b style="color:#d8584a">−</b> (xóa dòng).</div>
 
       <div class="actions">
         <button class="btn btn-primary" id="btnProcess">▶ Xử lý dữ liệu</button>
@@ -331,6 +509,80 @@
       </div>
     </div>
   </div>
+
+  </div><!-- /tab-process -->
+
+  <!-- ============================================================
+       TAB 2 — TẠO ĐƠN HÀNG
+       ============================================================ -->
+  <div class="tab-pane" id="tab-create">
+
+    <!-- Vùng nhập 4 cột -->
+    <div class="card" id="createInputCard">
+      <div class="card-head">
+        <div class="title"><span class="step">1</span> Nhập dữ liệu đơn hàng</div>
+        <button class="btn btn-ghost no-print" id="btnRefreshMisa">🔄 Làm mới dữ liệu MISA</button>
+      </div>
+      <div class="card-body">
+
+        <div class="misa-status loading" id="misaStatus">
+          <span class="dot"></span>
+          <span id="misaStatusText">Đang tải dữ liệu MISA…</span>
+        </div>
+
+        <div class="guide">
+          <b>Cách dùng:</b>
+          <ol>
+            <li>Dán <b>4 cột</b> <code>Order_ID</code> · <code>SKU</code> · <code>Quantity</code> · <code>Price</code> vào lưới bên dưới (Ctrl+V).</li>
+            <li>Bấm <b>Tạo đơn hàng</b>. App tự tra <b>Tên sản phẩm</b> và <b>Vị trí</b> theo SKU từ dữ liệu MISA.</li>
+            <li>Mỗi đơn hiển thị một bảng (đã sắp xếp theo Vị trí A→Z). Xem trước rồi bấm <b>In đơn hàng</b>.</li>
+            <li>Sửa ô: <b>nhấp đúp</b> (giống Excel). Một lần nhấp chỉ chọn ô — tránh bấm lộn. <code>Ctrl+Z</code> hoàn tác.</li>
+          </ol>
+        </div>
+
+        <div class="grid-input">
+          <div class="grid4-head">
+            <div>Order_ID (Mã đơn)</div>
+            <div>SKU (Mã sản phẩm)</div>
+            <div>Quantity</div>
+            <div>Price</div>
+          </div>
+          <div class="grid-scroll" id="grid4Scroll"></div>
+        </div>
+        <div class="grid-tip">💡 Dán (Ctrl+V) vào ô bất kỳ — dữ liệu 4 cột tự rải đúng vị trí. Lưới tự thêm hàng khi cần. <b>Kéo chuột</b> bôi đen nhiều ô rồi <code>Ctrl+C</code> để copy. Rê chuột vào một dòng để hiện nút <b style="color:#0f9d58">+</b> (chèn dòng dưới) và <b style="color:#d8584a">−</b> (xóa dòng).</div>
+
+        <div class="actions">
+          <button class="btn btn-primary" id="btnCreate">🧾 Tạo đơn hàng</button>
+          <button class="btn btn-ghost" id="btnUndo2">↩ Hoàn tác</button>
+          <button class="btn btn-ghost" id="btnRedo2">↪ Làm lại</button>
+          <button class="btn btn-ghost" id="btnClear2">✕ Xóa trắng</button>
+          <div class="counter">Đã nhập: <b id="cntRows2">0</b> dòng</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Vùng đơn hàng / xem trước in -->
+    <div class="card">
+      <div class="card-head">
+        <div class="title"><span class="step">2</span> Đơn hàng (xem trước in)</div>
+        <button class="btn btn-ok no-print" id="btnPrint" disabled>🖨 In đơn hàng</button>
+      </div>
+      <div class="card-body">
+        <div class="lock-hint no-print" id="printHint" style="display:none">
+          <span class="ico">🖨</span>
+          <span>Bản in <b>khổ A6 dọc</b>, chỉ đen–trắng. Khi bấm in, anh có thể đổi khổ giấy (A6/A5/A4) trong hộp thoại in của trình duyệt.</span>
+        </div>
+        <div id="invoiceArea">
+          <div class="empty">
+            <div class="big">🧾</div>
+            Chưa có đơn hàng. Nhập dữ liệu ở trên và bấm <b>Tạo đơn hàng</b>.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /tab-create -->
 
 </div>
 
@@ -649,6 +901,9 @@ function makeRow(orderVal, infoVal){
 
   row.appendChild(c1); row.appendChild(c2);
 
+  // nút chèn/xóa dòng (ẩn mờ, hiện khi hover)
+  row.appendChild(makeRowCtrls(row, 'grid1'));
+
   [t1, t2].forEach(function(ta){
     ta.addEventListener('paste', onCellPaste);
     // lưu undo MỘT LẦN cho mỗi "phiên gõ" (lần gõ đầu sau khi focus)
@@ -661,6 +916,69 @@ function makeRow(orderVal, infoVal){
     refreshLock(ta);
   });
   return row;
+}
+
+/* =========================================================================
+   NÚT CHÈN / XÓA DÒNG — dùng chung cho cả 2 lưới.
+   which = 'grid1' (lưới 2 cột) hoặc 'grid2' (lưới 4 cột).
+   - Nút +: chèn 1 dòng TRỐNG ngay DƯỚI dòng hiện tại.
+   - Nút −: xóa dòng hiện tại (không cho xóa nếu chỉ còn 1 dòng).
+   - Cả hai lưu undo để Ctrl+Z hoàn tác được.
+   ========================================================================= */
+function makeRowCtrls(rowEl, which){
+  var box = document.createElement('div');
+  box.className = 'row-ctrls';
+  box.setAttribute('contenteditable','false');
+
+  var add = document.createElement('button');
+  add.className = 'btn-add'; add.type = 'button';
+  add.textContent = '+'; add.title = 'Chèn một dòng trống ngay dưới';
+
+  var del = document.createElement('button');
+  del.className = 'btn-del'; del.type = 'button';
+  del.textContent = '−'; del.title = 'Xóa dòng này';
+
+  // mousedown: chặn nổi bọt để KHÔNG kích hoạt chọn ô / kéo vùng của lưới
+  function stop(e){ e.preventDefault(); e.stopPropagation(); }
+  add.addEventListener('mousedown', stop);
+  del.addEventListener('mousedown', stop);
+
+  add.addEventListener('click', function(e){
+    stop(e);
+    if(which === 'grid1') insertRowAfter_grid1(rowEl);
+    else insertRowAfter_grid2(rowEl);
+  });
+  del.addEventListener('click', function(e){
+    stop(e);
+    if(which === 'grid1') deleteRow_grid1(rowEl);
+    else deleteRow_grid2(rowEl);
+  });
+
+  box.appendChild(add); box.appendChild(del);
+  return box;
+}
+
+/* ----- Lưới 1: chèn / xóa dòng ----- */
+function insertRowAfter_grid1(rowEl){
+  pushUndo();
+  var newRow = makeRow('', '');
+  if(rowEl.nextSibling) rowEl.parentNode.insertBefore(newRow, rowEl.nextSibling);
+  else rowEl.parentNode.appendChild(newRow);
+  // focus ô đầu dòng mới cho tiện gõ
+  var ta = newRow.querySelector('textarea');
+  if(ta){ refreshLock(ta); ta.focus(); }
+  clearGridSelection(); inGrid.anchor = inGrid.focus = null;
+  ensureTrailingRow(); updateCounter();
+  toast('Đã chèn 1 dòng. (Ctrl+Z để hoàn tác)', 'ok');
+}
+function deleteRow_grid1(rowEl){
+  var rows = document.querySelectorAll('#gridScroll .grid-row');
+  if(rows.length <= 1){ toast('Phải còn ít nhất 1 dòng.', 'info'); return; }
+  pushUndo();
+  rowEl.parentNode.removeChild(rowEl);
+  clearGridSelection(); inGrid.anchor = inGrid.focus = null;
+  ensureTrailingRow(); updateCounter();
+  toast('Đã xóa 1 dòng. (Ctrl+Z để hoàn tác)', 'info');
 }
 
 /* Khóa/mở ô theo trạng thái: ô trống -> cho gõ; ô có dữ liệu -> khóa (chờ nhấp đúp) */
@@ -817,6 +1135,10 @@ function attachGridInputEvents(){
     var ta = cell.querySelector('textarea');
     if(ta && ta.classList.contains('editing')) return; // đang sửa: thao tác text bình thường
 
+    // Nếu có ô KHÁC đang ở chế độ sửa -> kết thúc sửa ô đó (khóa lại) trước.
+    var openTa = document.querySelector('#gridScroll textarea.editing');
+    if(openTa && openTa !== ta){ openTa.blur(); }
+
     var p = gridPos(cell);
 
     // Ô TRỐNG: cho gõ luôn. Vẫn đặt điểm bắt đầu để nếu kéo thì chọn vùng được.
@@ -848,10 +1170,15 @@ function attachGridInputEvents(){
     unlockForEdit(ta);
   });
 
-  // rời chế độ sửa khi blur -> khóa lại nếu có dữ liệu
+  // rời chế độ sửa khi blur -> GỠ trạng thái 'editing' rồi khóa lại nếu có dữ liệu.
+  // (Trước đây refreshLock thoát sớm khi còn class 'editing' khiến ô kẹt ở chế độ mở,
+  //  nháy 1 lần là sửa được — đây là chỗ khắc phục.)
   scroll.addEventListener('blur', function(e){
     var ta = e.target;
-    if(ta && ta.tagName === 'TEXTAREA'){ refreshLock(ta); }
+    if(ta && ta.tagName === 'TEXTAREA'){
+      ta.classList.remove('editing');   // kết thúc phiên sửa
+      refreshLock(ta);                  // khóa lại nếu ô có dữ liệu
+    }
   }, true);
 }
 
@@ -914,6 +1241,41 @@ function gridDragTick(){
   var x = (inGrid._lastX != null) ? inGrid._lastX : (rect.left + rect.width/2);
   gridExtendSelection(x, dragState.mouseY);
 }
+
+/* Lấy giá trị text của 1 ô lưới 1 theo (r,c) */
+function gridCellValue(r, c){
+  var cell = gridCellAt(r, c);
+  if(!cell) return '';
+  var ta = cell.querySelector('textarea');
+  return ta ? ta.value : '';
+}
+
+/* Ctrl+C: copy vùng đang bôi đen ở LƯỚI 1 ra TSV (giống bảng Kết quả) */
+function copyGrid1Selection(){
+  if(!inGrid.anchor || !inGrid.focus) return false;
+  var r1=Math.min(inGrid.anchor.r,inGrid.focus.r), r2=Math.max(inGrid.anchor.r,inGrid.focus.r);
+  var c1=Math.min(inGrid.anchor.c,inGrid.focus.c), c2=Math.max(inGrid.anchor.c,inGrid.focus.c);
+  var lines=[];
+  for(var r=r1;r<=r2;r++){
+    var cols=[];
+    for(var c=c1;c<=c2;c++){ cols.push(gridCellValue(r,c)); }
+    lines.push(cols.join('\t'));
+  }
+  writeClipboard(lines.join('\n'), (r2-r1+1)*(c2-c1+1));
+  return true;
+}
+document.addEventListener('keydown', function(e){
+  if((e.ctrlKey||e.metaKey) && (e.key==='c'||e.key==='C')){
+    // chỉ xử lý khi đang ở tab Xử Lý Đơn
+    if(!document.getElementById('tab-process').classList.contains('active')) return;
+    // đang sửa 1 ô (editing) -> để copy text mặc định trong ô
+    if(document.querySelector('#gridScroll textarea.editing')) return;
+    var sel = document.querySelectorAll('#gridScroll .grid-cell.cell-selected');
+    if(sel.length === 0) return;
+    e.preventDefault();
+    copyGrid1Selection();
+  }
+});
 
 /* Xóa nội dung vùng đang chọn bằng Delete/Backspace (khi KHÔNG đang sửa ô) */
 document.addEventListener('keydown', function(e){
@@ -1368,6 +1730,592 @@ initGrid();
 attachGridInputEvents();
 attachGridEvents();      // gắn sự kiện bảng kết quả 1 lần (delegation trên #resultBox)
 updateCounter();
+
+/* =========================================================================
+   ============   CHỨC NĂNG 2 — TẠO ĐƠN HÀNG   ============
+   Hoàn toàn tách biệt với chức năng 1. Mọi biến/hàm có tiền tố c2 / misa.
+   ========================================================================= */
+
+/* ---------- CHUYỂN TAB ---------- */
+function switchTab(name){
+  document.querySelectorAll('.tab-btn').forEach(function(b){
+    b.classList.toggle('active', b.getAttribute('data-tab') === name);
+  });
+  document.getElementById('tab-process').classList.toggle('active', name === 'process');
+  document.getElementById('tab-create').classList.toggle('active', name === 'create');
+  var title=document.getElementById('appTitle'), sub=document.getElementById('appSub');
+  if(name==='create'){
+    title.textContent='ZinZinMotor · Tạo Đơn Hàng';
+    sub.textContent='Nhập Order_ID · SKU · Quantity · Price → tự tạo đơn kèm tên & vị trí để in';
+  } else {
+    title.textContent='ZinZinMotor · Xử Lý Đơn';
+    sub.textContent='Dán dữ liệu Shopee → tách SKU · Số lượng · Giá bán';
+  }
+}
+document.getElementById('tabBtnProcess').addEventListener('click', function(){ switchTab('process'); });
+document.getElementById('tabBtnCreate').addEventListener('click', function(){
+  switchTab('create');
+  // tải MISA lần đầu khi mở tab (nếu chưa có)
+  if(!misa.loaded && !misa.loading) loadMisa();
+});
+
+/* =========================================================================
+   CONFIG — ANH ĐIỀN GIÁ TRỊ THẬT VÀO ĐÂY
+   -------------------------------------------------------------------------
+   - SPREADSHEET_ID: ID Google Sheet chứa sheet MISA
+   - API_KEY: khóa Google API (nên giới hạn: chỉ Google Sheets API, chỉ đọc)
+   - SHEET_NAME: tên sheet (mặc định "MISA")
+   - Cột trong MISA: A = Mã hàng (SKU) để dò; B = Tên hàng; G = Vị trí
+   ========================================================================= */
+var C2_CONFIG = {
+  SPREADSHEET_ID: "1Ro4FLShWGRQHilJ7m4RSmsfTp65QXpvJNfAjVjCLvrc",
+  API_KEY:        "AIzaSyANYGSIIawi6NyiSlWoWNVRJvUh1K_rqqw",
+  SHEET_NAME:     "MISA",
+  COL_SKU:   0,   // cột A (0-based)
+  COL_NAME:  1,   // cột B
+  COL_LOC:   6    // cột G
+};
+
+/* ---------- Trạng thái dữ liệu MISA ---------- */
+var misa = {
+  loaded:false,
+  loading:false,
+  map:null,        // Map: SKU -> {name, loc}
+  count:0,
+  loadedAt:null
+};
+
+function setMisaStatus(state, text){
+  var el = document.getElementById('misaStatus');
+  el.className = 'misa-status ' + state;
+  document.getElementById('misaStatusText').innerHTML = text;
+}
+
+/* ---------- Tải MISA qua Google Sheets API ---------- */
+function loadMisa(){
+  if(misa.loading) return;
+  // chưa điền config thì báo rõ
+  if(C2_CONFIG.SPREADSHEET_ID.indexOf('DÁN_') === 0 || C2_CONFIG.API_KEY.indexOf('DÁN_') === 0){
+    setMisaStatus('err',
+      'Chưa cấu hình kết nối. Hãy mở file HTML, tìm khối <b>C2_CONFIG</b> và điền ' +
+      '<b>SPREADSHEET_ID</b> và <b>API_KEY</b> thật vào.');
+    misa.loaded = false;
+    return;
+  }
+  misa.loading = true;
+  setMisaStatus('loading', 'Đang tải dữ liệu MISA…');
+
+  var range = encodeURIComponent(C2_CONFIG.SHEET_NAME);
+  var url = 'https://sheets.googleapis.com/v4/spreadsheets/' +
+            C2_CONFIG.SPREADSHEET_ID + '/values/' + range +
+            '?key=' + C2_CONFIG.API_KEY +
+            '&majorDimension=ROWS&valueRenderOption=UNFORMATTED_VALUE';
+
+  fetch(url)
+    .then(function(res){
+      if(!res.ok){
+        return res.text().then(function(t){
+          throw new Error('HTTP ' + res.status + ' — ' + t.slice(0,200));
+        });
+      }
+      return res.json();
+    })
+    .then(function(data){
+      buildMisaMap(data.values || []);
+      misa.loaded = true;
+      misa.loading = false;
+      misa.loadedAt = new Date();
+      setMisaStatus('ok',
+        'Đã tải <b>' + misa.count.toLocaleString('vi-VN') + '</b> sản phẩm từ MISA · ' +
+        '<span class="muted">lúc ' + fmtTime(misa.loadedAt) + '</span>');
+    })
+    .catch(function(err){
+      misa.loading = false;
+      misa.loaded = false;
+      setMisaStatus('err',
+        'Lỗi tải MISA: ' + esc(err.message) +
+        ' <span class="muted">— kiểm tra lại ID, API key, quyền chia sẻ sheet, hoặc mạng.</span>');
+    });
+}
+
+function fmtTime(d){
+  function p(n){ return (n<10?'0':'')+n; }
+  return p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());
+}
+
+/* dựng Map tra cứu: SKU -> {name, loc}. SKU trùng giữ bản ghi ĐẦU (như VLOOKUP). */
+function buildMisaMap(values){
+  var m = new Map();
+  // bỏ hàng tiêu đề (hàng 0)
+  for(var i = 1; i < values.length; i++){
+    var row = values[i] || [];
+    var sku = (row[C2_CONFIG.COL_SKU] != null ? String(row[C2_CONFIG.COL_SKU]) : '').trim();
+    if(sku === '') continue;
+    if(m.has(sku)) continue; // giữ bản ghi đầu tiên
+    var name = (row[C2_CONFIG.COL_NAME] != null ? String(row[C2_CONFIG.COL_NAME]) : '').trim();
+    var loc  = (row[C2_CONFIG.COL_LOC]  != null ? String(row[C2_CONFIG.COL_LOC])  : '').trim();
+    m.set(sku, { name:name, loc:loc });
+  }
+  misa.map = m;
+  misa.count = m.size;
+}
+
+document.getElementById('btnRefreshMisa').addEventListener('click', function(){
+  misa.loaded = false;
+  loadMisa();
+});
+
+/* =========================================================================
+   LƯỚI NHẬP 4 CỘT (Order_ID | SKU | Quantity | Price)
+   Tái dùng đúng cơ chế tương tác của chức năng 1: ô trống gõ luôn,
+   ô có dữ liệu khóa (nhấp đúp mới sửa), kéo chọn vùng, Delete xóa,
+   auto-scroll mượt, Ctrl+Z/Y. Mọi thứ độc lập qua đối tượng c2.
+   ========================================================================= */
+var C2_MIN_ROWS = 8;
+var C2_NCOLS = 4;
+var c2sel = { anchor:null, focus:null, selecting:false, pending:null, _lastX:null };
+var c2undo = [], c2redo = [], C2_MAX_UNDO = 100, c2restoring = false;
+var c2Invoices = []; // kết quả đơn hàng đã tạo (để in)
+
+function c2MakeRow(vals){
+  vals = vals || ['','','',''];
+  var row = document.createElement('div');
+  row.className = 'grid4-row';
+  var colClass = ['col-oid','col-sku','col-qty','col-price'];
+  for(var c = 0; c < C2_NCOLS; c++){
+    var cell = document.createElement('div');
+    cell.className = 'grid4-cell ' + colClass[c];
+    var ta = document.createElement('textarea');
+    ta.rows = 1; ta.value = vals[c] || ''; ta.setAttribute('data-col', c);
+    ta.spellcheck = false;
+    cell.appendChild(ta);
+    row.appendChild(cell);
+    (function(ta){
+      ta.addEventListener('paste', c2OnPaste);
+      ta.addEventListener('beforeinput', function(){
+        if(!ta._dirty){ ta._dirty = true; c2PushUndo(); }
+      });
+      ta.addEventListener('input', function(){ c2AutoGrow(ta); c2EnsureTrailing(); c2UpdateCounter(); });
+      ta.addEventListener('blur', function(){ ta._dirty = false; ta.classList.remove('editing'); c2RefreshLock(ta); });
+      c2RefreshLock(ta);
+    })(ta);
+  }
+  // nút chèn/xóa dòng (ẩn mờ, hiện khi hover)
+  row.appendChild(makeRowCtrls(row, 'grid2'));
+  return row;
+}
+
+/* ----- Lưới 2: chèn / xóa dòng ----- */
+function insertRowAfter_grid2(rowEl){
+  c2PushUndo();
+  var newRow = c2MakeRow();
+  if(rowEl.nextSibling) rowEl.parentNode.insertBefore(newRow, rowEl.nextSibling);
+  else rowEl.parentNode.appendChild(newRow);
+  var ta = newRow.querySelector('textarea');
+  if(ta){ c2RefreshLock(ta); ta.focus(); }
+  c2ClearSel(); c2sel.anchor = c2sel.focus = null;
+  c2EnsureTrailing(); c2UpdateCounter();
+  toast('Đã chèn 1 dòng. (Ctrl+Z để hoàn tác)', 'ok');
+}
+function deleteRow_grid2(rowEl){
+  var rows = document.querySelectorAll('#grid4Scroll .grid4-row');
+  if(rows.length <= 1){ toast('Phải còn ít nhất 1 dòng.', 'info'); return; }
+  c2PushUndo();
+  rowEl.parentNode.removeChild(rowEl);
+  c2ClearSel(); c2sel.anchor = c2sel.focus = null;
+  c2EnsureTrailing(); c2UpdateCounter();
+  toast('Đã xóa 1 dòng. (Ctrl+Z để hoàn tác)', 'info');
+}
+function c2AutoGrow(ta){ ta.style.height='auto'; ta.style.height=Math.max(38,ta.scrollHeight)+'px'; }
+function c2RefreshLock(ta){
+  if(ta.classList.contains('editing')) return;
+  if(ta.value.trim()===''){ ta.readOnly=false; ta.classList.remove('locked'); }
+  else { ta.readOnly=true; ta.classList.add('locked'); }
+}
+function c2Unlock(ta){ ta.readOnly=false; ta.classList.remove('locked'); ta.classList.add('editing'); ta.focus(); var v=ta.value; ta.value=''; ta.value=v; }
+
+function c2OnPaste(e){
+  var text = (e.clipboardData||window.clipboardData).getData('text');
+  if(!text) return;
+  if(text.indexOf('\t')===-1 && text.indexOf('\n')===-1) return;
+  e.preventDefault();
+  c2PushUndo();
+  var startTa = e.target;
+  var startCol = parseInt(startTa.getAttribute('data-col'),10);
+  var allRows = Array.prototype.slice.call(document.querySelectorAll('#grid4Scroll .grid4-row'));
+  var startIdx = allRows.indexOf(startTa.closest('.grid4-row'));
+  var data = parseTSV(text);
+  while(data.length && data[data.length-1].every(function(x){return (x||'').trim()===''})) data.pop();
+  var need = startIdx + data.length;
+  while(document.querySelectorAll('#grid4Scroll .grid4-row').length < need){
+    document.getElementById('grid4Scroll').appendChild(c2MakeRow());
+  }
+  allRows = Array.prototype.slice.call(document.querySelectorAll('#grid4Scroll .grid4-row'));
+  for(var i=0;i<data.length;i++){
+    var cells = allRows[startIdx+i].querySelectorAll('textarea');
+    for(var j=0;j<data[i].length;j++){
+      var tc = startCol+j; if(tc>=C2_NCOLS) break;
+      cells[tc].value = data[i][j]; c2AutoGrow(cells[tc]); c2RefreshLock(cells[tc]);
+    }
+  }
+  c2EnsureTrailing(); c2UpdateCounter();
+  toast('Đã dán ' + data.length + ' hàng vào lưới.', 'ok');
+}
+
+function c2EnsureTrailing(){
+  var rows = document.querySelectorAll('#grid4Scroll .grid4-row');
+  if(rows.length===0){ document.getElementById('grid4Scroll').appendChild(c2MakeRow()); return; }
+  var last = rows[rows.length-1].querySelectorAll('textarea');
+  var empty = true;
+  last.forEach(function(t){ if(t.value.trim()!=='') empty=false; });
+  if(!empty) document.getElementById('grid4Scroll').appendChild(c2MakeRow());
+}
+function c2ReadAllRows(){
+  var out=[];
+  document.querySelectorAll('#grid4Scroll .grid4-row').forEach(function(r){
+    var t=r.querySelectorAll('textarea');
+    out.push([t[0].value,t[1].value,t[2].value,t[3].value]);
+  });
+  return out;
+}
+function c2ReadDataRows(){
+  return c2ReadAllRows().filter(function(r){
+    return !(r[0].trim()==='' && r[1].trim()==='' && r[2].trim()==='' && r[3].trim()==='');
+  });
+}
+function c2InitGrid(){
+  var s=document.getElementById('grid4Scroll'); s.innerHTML='';
+  for(var i=0;i<C2_MIN_ROWS;i++) s.appendChild(c2MakeRow());
+  c2sel.anchor=c2sel.focus=null;
+}
+function c2UpdateCounter(){
+  document.getElementById('cntRows2').textContent = c2ReadDataRows().length;
+}
+
+/* ----- chọn ô / vùng cho lưới 4 cột ----- */
+function c2CellAt(r,c){
+  var rows=document.querySelectorAll('#grid4Scroll .grid4-row');
+  if(!rows[r]) return null;
+  return rows[r].querySelectorAll('.grid4-cell')[c]||null;
+}
+function c2Pos(cell){
+  var rowEl=cell.closest('.grid4-row');
+  var rows=Array.prototype.slice.call(document.querySelectorAll('#grid4Scroll .grid4-row'));
+  var cells=Array.prototype.slice.call(rowEl.querySelectorAll('.grid4-cell'));
+  return { r:rows.indexOf(rowEl), c:cells.indexOf(cell) };
+}
+function c2ClearSel(){
+  document.querySelectorAll('#grid4Scroll .grid4-cell.cell-selected,#grid4Scroll .grid4-cell.cell-anchor')
+    .forEach(function(e){ e.classList.remove('cell-selected'); e.classList.remove('cell-anchor'); });
+  document.querySelectorAll('#grid4Scroll .grid4-row.row-active').forEach(function(e){ e.classList.remove('row-active'); });
+}
+function c2ApplySel(){
+  c2ClearSel();
+  if(!c2sel.anchor||!c2sel.focus) return;
+  var r1=Math.min(c2sel.anchor.r,c2sel.focus.r), r2=Math.max(c2sel.anchor.r,c2sel.focus.r);
+  var c1=Math.min(c2sel.anchor.c,c2sel.focus.c), c2_=Math.max(c2sel.anchor.c,c2sel.focus.c);
+  var rows=document.querySelectorAll('#grid4Scroll .grid4-row');
+  for(var r=r1;r<=r2;r++){
+    if(rows[r]) rows[r].classList.add('row-active');
+    for(var c=c1;c<=c2_;c++){ var cell=c2CellAt(r,c); if(cell) cell.classList.add('cell-selected'); }
+  }
+  var a=c2CellAt(c2sel.anchor.r,c2sel.anchor.c); if(a) a.classList.add('cell-anchor');
+}
+
+function c2AttachGridEvents(){
+  var scroll=document.getElementById('grid4Scroll');
+  scroll.addEventListener('mousedown', function(e){
+    if(e.button!==0) return;
+    var cell=e.target.closest('.grid4-cell'); if(!cell) return;
+    var ta=cell.querySelector('textarea');
+    if(ta && ta.classList.contains('editing')) return;
+    // Nếu có ô KHÁC đang sửa -> kết thúc (khóa lại) trước.
+    var openTa=document.querySelector('#grid4Scroll textarea.editing');
+    if(openTa && openTa!==ta){ openTa.blur(); }
+    var p=c2Pos(cell);
+    if(ta && ta.value.trim()===''){
+      c2ClearSel(); c2sel.anchor=p; c2sel.focus=p;
+      c2sel.pending={x:e.clientX,y:e.clientY,started:false};
+      return;
+    }
+    if(e.shiftKey && c2sel.anchor){ c2sel.focus=p; c2ApplySel(); }
+    else { c2sel.anchor=p; c2sel.focus=p; c2ApplySel(); }
+    c2sel.pending={x:e.clientX,y:e.clientY,started:false};
+    e.preventDefault();
+  });
+  scroll.addEventListener('dblclick', function(e){
+    var cell=e.target.closest('.grid4-cell'); if(!cell) return;
+    var ta=cell.querySelector('textarea'); if(!ta) return;
+    c2ClearSel(); c2Unlock(ta);
+  });
+  scroll.addEventListener('blur', function(e){
+    if(e.target && e.target.tagName==='TEXTAREA'){
+      e.target.classList.remove('editing');
+      c2RefreshLock(e.target);
+    }
+  }, true);
+}
+
+document.addEventListener('mousemove', function(e){
+  if(!c2sel.pending) return;
+  var dx=Math.abs(e.clientX-c2sel.pending.x), dy=Math.abs(e.clientY-c2sel.pending.y);
+  if(!c2sel.pending.started){
+    if(dx<4 && dy<4) return;
+    c2sel.pending.started=true; c2sel.selecting=true;
+    var sc=document.getElementById('grid4Scroll');
+    dragState.active=true; dragState.container=sc; dragState.onTick=c2DragTick;
+    startAutoScrollLoop();
+    if(document.activeElement && document.activeElement.tagName==='TEXTAREA') document.activeElement.blur();
+  }
+  dragState.mouseY=e.clientY; c2sel._lastX=e.clientX;
+  c2ExtendSel(e.clientX,e.clientY);
+});
+document.addEventListener('mouseup', function(){
+  if(c2sel.pending) c2sel.pending=null;
+  if(c2sel.selecting){
+    c2sel.selecting=false;
+    if(dragState.container && dragState.container.id==='grid4Scroll') stopAutoScroll();
+  }
+});
+function c2ExtendSel(x,y){
+  var sc=document.getElementById('grid4Scroll');
+  var el=document.elementFromPoint(x,y);
+  var cell=el?el.closest('.grid4-cell'):null;
+  if(!cell){
+    var rect=sc.getBoundingClientRect();
+    var cy=Math.max(rect.top+2,Math.min(rect.bottom-2,y));
+    var cx=Math.min(rect.right-10,Math.max(rect.left+10,x));
+    var el2=document.elementFromPoint(cx,cy);
+    cell=el2?el2.closest('.grid4-cell'):null;
+  }
+  if(!cell) return;
+  c2sel.focus=c2Pos(cell); c2ApplySel();
+}
+function c2DragTick(){
+  var sc=document.getElementById('grid4Scroll');
+  var rect=sc.getBoundingClientRect();
+  var x=(c2sel._lastX!=null)?c2sel._lastX:(rect.left+rect.width/2);
+  c2ExtendSel(x,dragState.mouseY);
+}
+
+/* Lấy giá trị text của 1 ô lưới 2 theo (r,c) */
+function c2CellValue(r,c){
+  var cell=c2CellAt(r,c);
+  if(!cell) return '';
+  var ta=cell.querySelector('textarea');
+  return ta?ta.value:'';
+}
+/* Ctrl+C: copy vùng đang bôi đen ở LƯỚI 2 ra TSV */
+function copyGrid2Selection(){
+  if(!c2sel.anchor||!c2sel.focus) return false;
+  var r1=Math.min(c2sel.anchor.r,c2sel.focus.r), r2=Math.max(c2sel.anchor.r,c2sel.focus.r);
+  var c1=Math.min(c2sel.anchor.c,c2sel.focus.c), cc2=Math.max(c2sel.anchor.c,c2sel.focus.c);
+  var lines=[];
+  for(var r=r1;r<=r2;r++){
+    var cols=[];
+    for(var c=c1;c<=cc2;c++){ cols.push(c2CellValue(r,c)); }
+    lines.push(cols.join('\t'));
+  }
+  writeClipboard(lines.join('\n'), (r2-r1+1)*(cc2-c1+1));
+  return true;
+}
+document.addEventListener('keydown', function(e){
+  if((e.ctrlKey||e.metaKey) && (e.key==='c'||e.key==='C')){
+    if(!document.getElementById('tab-create').classList.contains('active')) return;
+    if(document.querySelector('#grid4Scroll textarea.editing')) return;
+    var sel=document.querySelectorAll('#grid4Scroll .grid4-cell.cell-selected');
+    if(sel.length===0) return;
+    e.preventDefault();
+    copyGrid2Selection();
+  }
+});
+
+/* Delete xóa vùng chọn lưới 4 cột */
+document.addEventListener('keydown', function(e){
+  if(document.querySelector('#grid4Scroll textarea.editing')) return;
+  if(!c2sel.anchor||!c2sel.focus) return;
+  var sel=document.querySelectorAll('#grid4Scroll .grid4-cell.cell-selected');
+  if(sel.length===0) return;
+  if(e.key==='Delete'||e.key==='Backspace'){
+    e.preventDefault(); c2PushUndo();
+    sel.forEach(function(cell){ var ta=cell.querySelector('textarea'); if(ta){ ta.value=''; c2AutoGrow(ta); c2RefreshLock(ta); } });
+    c2UpdateCounter();
+    toast('Đã xóa nội dung '+sel.length+' ô. (Ctrl+Z để hoàn tác)','info');
+  }
+});
+
+/* ----- Undo/Redo riêng cho chức năng 2 ----- */
+function c2Snapshot(){ return { grid:c2ReadAllRows() }; }
+function c2PushUndo(){
+  if(c2restoring) return;
+  c2undo.push(c2Snapshot());
+  if(c2undo.length>C2_MAX_UNDO) c2undo.shift();
+  c2redo=[];
+}
+function c2Restore(snap){
+  c2restoring=true;
+  var s=document.getElementById('grid4Scroll'); s.innerHTML='';
+  snap.grid.forEach(function(v){ s.appendChild(c2MakeRow(v)); });
+  document.querySelectorAll('#grid4Scroll textarea').forEach(function(ta){ c2AutoGrow(ta); });
+  c2EnsureTrailing(); c2ClearSel(); c2sel.anchor=c2sel.focus=null;
+  c2UpdateCounter(); c2restoring=false;
+}
+function c2DoUndo(){
+  if(c2undo.length===0){ toast('Không còn bước nào để hoàn tác.','info'); return; }
+  c2redo.push(c2Snapshot()); var s=c2undo.pop(); c2Restore(s);
+  toast('Đã hoàn tác. (còn '+c2undo.length+' bước)','ok');
+}
+function c2DoRedo(){
+  if(c2redo.length===0){ toast('Không còn bước nào để làm lại.','info'); return; }
+  c2undo.push(c2Snapshot()); var s=c2redo.pop(); c2Restore(s);
+  toast('Đã làm lại.','ok');
+}
+document.addEventListener('keydown', function(e){
+  // chỉ khi đang ở tab create
+  if(!document.getElementById('tab-create').classList.contains('active')) return;
+  var editing = document.querySelector('#grid4Scroll textarea.editing');
+  if(editing) return;
+  if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&(e.key==='z'||e.key==='Z')){ e.preventDefault(); c2DoUndo(); }
+  else if((e.ctrlKey||e.metaKey)&&((e.key==='y'||e.key==='Y')||(e.shiftKey&&(e.key==='z'||e.key==='Z')))){ e.preventDefault(); c2DoRedo(); }
+});
+
+/* =========================================================================
+   THUẬT TOÁN TẠO ĐƠN HÀNG (theo logic VBA)
+   - Gom theo Order_ID, GIỮ thứ tự xuất hiện đầu tiên (như input)
+   - Trong mỗi đơn: sắp Location A→Z, dòng trống Location đẩy xuống cuối
+   - Tra Product_Name & Location theo SKU từ MISA (không thấy -> để trống)
+   - Total Price = Σ(Price × Qty)
+   ========================================================================= */
+function c2NormPriceNum(raw){
+  if(raw==null) return 0;
+  var s=String(raw).replace(/[^\d.,]/g,'').replace(/,/g,'');
+  var n=parseFloat(s);
+  return isNaN(n)?0:n;
+}
+function c2NormQtyNum(raw){
+  if(raw==null) return 0;
+  var n=parseInt(String(raw).replace(/[^\d]/g,''),10);
+  return isNaN(n)?0:n;
+}
+
+function createInvoices(){
+  var rows=c2ReadDataRows();
+  if(rows.length===0){ toast('Chưa có dữ liệu để tạo đơn. Hãy nhập ở trên.','err'); return; }
+
+  // bỏ qua hàng tiêu đề nếu người dùng dán kèm
+  if(rows[0] && String(rows[0][0]).trim().toLowerCase()==='order_id'){ rows=rows.slice(1); }
+  if(rows.length===0){ toast('Không có dòng dữ liệu hợp lệ.','err'); return; }
+
+  if(!misa.loaded){
+    toast('Chưa có dữ liệu MISA — sẽ tạo đơn nhưng thiếu tên & vị trí. Bấm "Làm mới dữ liệu MISA".','warn');
+  }
+
+  // gom theo Order_ID, giữ thứ tự xuất hiện
+  var order=[]; var groups={};
+  rows.forEach(function(r){
+    var oid=String(r[0]).trim();
+    if(oid==='') return; // bỏ dòng không có mã đơn
+    var sku=String(r[1]).trim();
+    var qty=c2NormQtyNum(r[2]);
+    var price=c2NormPriceNum(r[3]);
+    var look=(misa.map && misa.map.get(sku)) || null;
+    var item={
+      sku:sku,
+      name: look?look.name:'',
+      loc:  look?look.loc:'',
+      qty:qty, price:price
+    };
+    if(!groups[oid]){ groups[oid]={ oid:oid, items:[] }; order.push(oid); }
+    groups[oid].items.push(item);
+  });
+
+  // sắp xếp trong mỗi đơn: Location A→Z, trống xuống cuối
+  var invoices=order.map(function(oid){
+    var g=groups[oid];
+    var items=g.items.slice();
+    items.sort(function(a,b){
+      var la=a.loc||'', lb=b.loc||'';
+      if(la==='' && lb==='') return 0;
+      if(la==='') return 1;     // a trống -> xuống cuối
+      if(lb==='') return -1;    // b trống -> xuống cuối
+      if(la<lb) return -1;
+      if(la>lb) return 1;
+      return 0;
+    });
+    var total=items.reduce(function(s,it){ return s + it.price*it.qty; },0);
+    return { oid:oid, items:items, total:total };
+  });
+
+  c2Invoices=invoices;
+  renderInvoices(invoices);
+
+  var nItems=invoices.reduce(function(s,iv){ return s+iv.items.length; },0);
+  toast('Đã tạo '+invoices.length+' đơn hàng ('+nItems+' dòng sản phẩm).','ok');
+}
+
+function renderInvoices(invoices){
+  var area=document.getElementById('invoiceArea');
+  if(invoices.length===0){
+    area.innerHTML='<div class="empty"><div class="big">🧾</div>Không có đơn nào được tạo.</div>';
+    document.getElementById('btnPrint').disabled=true;
+    document.getElementById('printHint').style.display='none';
+    return;
+  }
+  var html='';
+  invoices.forEach(function(iv){
+    html+='<div class="invoice">';
+    html+='<div class="invoice-head"><span class="oid-label">ORDER ID: </span><span class="oid-value">'+esc(iv.oid)+'</span></div>';
+    html+='<table class="inv-table"><thead><tr>'+
+      '<th>SKU</th><th>Location</th><th>Qty</th><th>Product_Name</th><th>Note</th>'+
+      '</tr></thead><tbody>';
+    iv.items.forEach(function(it){
+      html+='<tr>'+
+        '<td class="i-sku">'+esc(it.sku)+'</td>'+
+        '<td class="i-loc">'+esc(it.loc)+'</td>'+
+        '<td class="i-qty">'+esc(String(it.qty))+'</td>'+
+        '<td class="i-name">'+esc(it.name)+'</td>'+
+        '<td class="i-note"></td>'+
+        '</tr>';
+    });
+    html+='</tbody></table>';
+    html+='<div class="inv-total">Total Price:<span class="num">'+iv.total.toLocaleString('vi-VN')+'</span></div>';
+    html+='</div>';
+  });
+  area.innerHTML=html;
+  document.getElementById('btnPrint').disabled=false;
+  document.getElementById('printHint').style.display='flex';
+}
+
+/* ----- nút chức năng 2 ----- */
+document.getElementById('btnCreate').addEventListener('click', createInvoices);
+document.getElementById('btnUndo2').addEventListener('click', c2DoUndo);
+document.getElementById('btnRedo2').addEventListener('click', c2DoRedo);
+document.getElementById('btnClear2').addEventListener('click', function(){
+  c2PushUndo();
+  c2InitGrid(); c2Invoices=[];
+  document.getElementById('invoiceArea').innerHTML=
+    '<div class="empty"><div class="big">🧾</div>Chưa có đơn hàng. Nhập dữ liệu ở trên và bấm <b>Tạo đơn hàng</b>.</div>';
+  document.getElementById('btnPrint').disabled=true;
+  document.getElementById('printHint').style.display='none';
+  c2UpdateCounter();
+  toast('Đã xóa trắng. (Ctrl+Z để hoàn tác)','info');
+});
+document.getElementById('btnPrint').addEventListener('click', function(){
+  if(c2Invoices.length===0){ toast('Chưa có đơn để in.','err'); return; }
+  window.print();
+});
+
+/* click ngoài lưới 4 cột -> bỏ chọn */
+document.addEventListener('mousedown', function(e){
+  if(!e.target.closest('#grid4Scroll')){
+    c2ClearSel(); c2sel.anchor=c2sel.focus=null;
+  }
+}, true);
+
+/* khởi tạo chức năng 2 */
+c2InitGrid();
+c2AttachGridEvents();
+c2UpdateCounter();
 </script>
 </body>
 </html>
