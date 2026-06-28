@@ -38,39 +38,44 @@
   .wrap{max-width:1280px;margin:0 auto}
 
   /* ===== Header ===== */
-  /* ===== THANH ĐIỀU HƯỚNG TỰ ẨN/HIỆN ===== */
-  .nav-shell{
+  /* ===== THANH ĐIỀU HƯỚNG TỰ ẨN/HIỆN =====
+     Nguyên tắc chống giật: thanh LUÔN nằm trong dòng chảy trang (không bao giờ
+     đổi sang position:fixed). Khi cuộn xuống, thanh tự THU CHIỀU CAO về 0 một
+     cách mượt -> bảng dữ liệu phía dưới dâng lên từ từ theo, không giật. */
+  .nav-wrap{
     position:sticky; top:0; z-index:100;
+    overflow:visible;
+  }
+  .nav-shell{
     display:flex; justify-content:center;
     margin:0 0 16px;
-    transition:transform .32s cubic-bezier(.4,0,.2,1), opacity .25s ease;
-    will-change:transform;
+    /* hiệu ứng: thanh biến mất NHANH (transform/opacity ngắn) */
+    transition:transform .28s ease, opacity .24s ease;
+    transform-origin:top center;
+    will-change:transform, opacity;
   }
-  /* khi đã cuộn -> trượt lên ẩn, trừ khi đang "peek" (gọi mở) */
-  .nav-shell.hidden{
-    transform:translateY(-150%);
+  /* Lớp bao điều khiển chiều cao: thu lại CHẬM để bảng dâng lên thong thả */
+  .nav-collapser{
+    overflow:hidden;
+    max-height:200px;            /* đủ lớn để chứa thanh khi mở */
+    transition:max-height .85s cubic-bezier(.33,1,.68,1), margin-bottom .85s cubic-bezier(.33,1,.68,1);
+    will-change:max-height;
+  }
+  /* khi đã cuộn & không mở: thanh biến mất nhanh + chiều cao co chậm */
+  .nav-wrap.collapsed .nav-shell{
+    transform:translateY(-12px) scale(.96);
     opacity:0; pointer-events:none;
   }
-  .nav-shell.peek{
-    transform:translateY(0);
-    opacity:1; pointer-events:auto;
+  .nav-wrap.collapsed .nav-collapser{
+    max-height:0;
+    margin-bottom:0;
   }
-  /* Khi đã cuộn: thanh thả ra TỪ GÓC PHẢI (ngay chỗ nút tròn), không thả từ giữa.
-     - chuyển thành lớp nổi cố định, neo bên phải
-     - gốc biến đổi ở trên-phải để cảm giác "bung ra từ nút tròn" */
-  .nav-shell.docked-right{
-    position:fixed; top:12px; right:18px; left:auto;
-    justify-content:flex-end; margin:0;
-    transform-origin:top right;
+  /* khi đang "peek" (rê nút tròn để mở lại): thanh hiện lại nhanh, chiều cao giãn */
+  .nav-wrap.peeking .nav-shell{
+    transform:none; opacity:1; pointer-events:auto;
   }
-  .nav-shell.docked-right.hidden{
-    transform:translateY(0) scale(.5);
-    opacity:0; pointer-events:none;
-  }
-  .nav-shell.docked-right.peek{
-    transform:translateY(0) scale(1);
-    opacity:1; pointer-events:auto;
-    transition:transform .34s cubic-bezier(.22,1,.36,1), opacity .25s ease;
+  .nav-wrap.peeking .nav-collapser{
+    max-height:200px;
   }
 
   .tabbar{
@@ -612,17 +617,24 @@
     background:rgba(8,15,28,.66); backdrop-filter:blur(3px);
     display:none; align-items:stretch; justify-content:center;
     padding:24px;
+    opacity:0;
+    transition:opacity .24s ease;
   }
-  .editor-overlay.open{ display:flex; animation:edFade .2s ease; }
-  @keyframes edFade{ from{opacity:0} to{opacity:1} }
+  .editor-overlay.open{ opacity:1; }
 
   .editor-modal{
     background:var(--panel); border-radius:16px; width:100%; max-width:1180px;
     display:flex; flex-direction:column; overflow:hidden;
     box-shadow:0 30px 80px rgba(0,0,0,.55);
-    animation:edPop .24s cubic-bezier(.22,1,.36,1);
+    /* trạng thái đóng: hơi nhỏ + dịch xuống; mở thì về bình thường -> mượt 2 chiều */
+    transform:translateY(18px) scale(.97);
+    opacity:0;
+    transition:transform .26s cubic-bezier(.22,1,.36,1), opacity .24s ease;
   }
-  @keyframes edPop{ from{transform:translateY(16px) scale(.98);opacity:0} to{transform:none;opacity:1} }
+  .editor-overlay.open .editor-modal{
+    transform:translateY(0) scale(1);
+    opacity:1;
+  }
 
   .editor-head{
     display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
@@ -672,14 +684,18 @@
 <div class="wrap">
 
   <!-- ===== THANH ĐIỀU HƯỚNG (chỉ 2 nút). Tự ẩn khi cuộn, gọi lại bằng nút tròn. ===== -->
-  <div class="nav-shell" id="navShell">
-    <div class="tabbar" id="tabbar">
-      <button class="tab-btn active" id="tabBtnProcess" data-tab="process">
-        <span class="tab-ico">📋</span><span class="tab-txt">Xử Lý Đơn</span>
-      </button>
-      <button class="tab-btn" id="tabBtnCreate" data-tab="create">
-        <span class="tab-ico">🧾</span><span class="tab-txt">Tạo Đơn Hàng</span>
-      </button>
+  <div class="nav-wrap" id="navWrap">
+    <div class="nav-collapser">
+      <div class="nav-shell" id="navShell">
+        <div class="tabbar" id="tabbar">
+          <button class="tab-btn active" id="tabBtnProcess" data-tab="process">
+            <span class="tab-ico">📋</span><span class="tab-txt">Xử Lý Đơn</span>
+          </button>
+          <button class="tab-btn" id="tabBtnCreate" data-tab="create">
+            <span class="tab-ico">🧾</span><span class="tab-txt">Tạo Đơn Hàng</span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1494,12 +1510,18 @@ function attachGridInputEvents(){
 
     var p = gridPos(cell);
 
-    // Ô TRỐNG: cho gõ luôn. Vẫn đặt điểm bắt đầu để nếu kéo thì chọn vùng được.
+    // Ô TRỐNG:
+    //  - NGOÀI cửa sổ chỉnh sửa: cho gõ luôn (như cũ).
+    //  - TRONG cửa sổ chỉnh sửa: chỉ CHỌN ô (giống Google Sheets), gõ mới nhập.
     if(ta && ta.value.trim() === ''){
       clearGridSelection();
       inGrid.anchor = p; inGrid.focus = p;
       inGrid.pending = { x:e.clientX, y:e.clientY, started:false };
-      // KHÔNG preventDefault -> textarea nhận focus, gõ ngay được
+      if(isEditorOpen()){
+        applyGridSelection();
+        e.preventDefault();   // không tự đưa con trỏ vào; chờ người dùng gõ
+      }
+      // (ngoài modal: KHÔNG preventDefault -> textarea nhận focus, gõ ngay được)
       return;
     }
 
@@ -2406,6 +2428,10 @@ function c2AttachGridEvents(){
     if(ta && ta.value.trim()===''){
       c2ClearSel(); c2sel.anchor=p; c2sel.focus=p;
       c2sel.pending={x:e.clientX,y:e.clientY,started:false};
+      if(isEditorOpen()){
+        c2ApplySel();
+        e.preventDefault();   // trong modal: chỉ chọn ô rỗng, gõ mới nhập
+      }
       return;
     }
     if(e.shiftKey && c2sel.anchor){ c2sel.focus=p; c2ApplySel(); }
@@ -2716,45 +2742,62 @@ setupGuideToggle('guideToggle2', 'guideWrap2');
    Chỉ điều khiển giao diện, không đụng dữ liệu/thuật toán.
    ========================================================================= */
 (function(){
+  var wrap    = document.getElementById('navWrap');
   var shell   = document.getElementById('navShell');
   var fab     = document.getElementById('navFab');
   var hotzone = document.getElementById('navHotzone');
   var fabIco  = document.getElementById('fabIco');
-  if(!shell || !fab || !hotzone) return;
+  if(!wrap || !shell || !fab || !hotzone) return;
 
-  var SCROLL_TRIGGER = 80;   // cuộn quá mức này thì bật chế độ tự ẩn
-  var scrolled = false;      // đang ở trạng thái đã cuộn?
-  var peeking  = false;      // thanh đang được "gọi" hiện ra?
-  var overNav  = false;      // chuột đang trên thanh/nút/vùng trên?
+  /* Hai ngưỡng TÁCH RỜI (hysteresis) để chống rung khi cuộn dừng ở lưng chừng:
+     - Phải cuộn XUỐNG quá HIDE_AT mới thu thanh.
+     - Phải cuộn LÊN dưới SHOW_AT mới hiện lại thanh.
+     Khoảng giữa là "vùng chết": trạng thái giữ nguyên, không dao động.
+     Vùng đệm rộng hơn chiều cao thanh (~64px) nên việc thu/giãn KHÔNG thể
+     tự đẩy scrollY qua lại ngưỡng -> hết giật liên hồi. */
+  var HIDE_AT = 150;   // cuộn xuống quá đây -> thu thanh
+  var SHOW_AT = 30;    // cuộn lên dưới đây -> hiện thanh
+  var scrolled = false;
+  var peeking  = false;
+  var overNav  = false;
   var hideTimer = null;
+  var animating = false;   // đang trong lúc thu/giãn -> bỏ qua onScroll để chặn vòng lặp
 
   function apply(){
     if(!scrolled){
-      // ở đầu trang: thanh ở GIỮA như cũ, ẩn nút tròn
-      shell.classList.remove('docked-right');
-      shell.classList.remove('hidden');
-      shell.classList.remove('peek');
+      wrap.classList.remove('collapsed');
+      wrap.classList.remove('peeking');
       fab.classList.remove('show');
       hotzone.classList.remove('armed');
       return;
     }
-    // đã cuộn: thanh chuyển sang neo GÓC PHẢI (thả ra từ chỗ nút tròn)
-    shell.classList.add('docked-right');
     hotzone.classList.add('armed');
     if(peeking || overNav){
-      shell.classList.remove('hidden');
-      shell.classList.add('peek');
-      fab.classList.remove('show');     // đang mở thanh thì ẩn nút tròn
+      wrap.classList.remove('collapsed');
+      wrap.classList.add('peeking');
+      fab.classList.remove('show');
     } else {
-      shell.classList.add('hidden');
-      shell.classList.remove('peek');
+      wrap.classList.add('collapsed');
+      wrap.classList.remove('peeking');
       fab.classList.add('show');
     }
   }
 
   function onScroll(){
-    var now = window.scrollY > SCROLL_TRIGGER;
-    if(now !== scrolled){ scrolled = now; if(!scrolled) peeking = false; apply(); }
+    if(animating) return;   // đang co/giãn: bỏ qua, tránh tự kích hoạt vòng lặp
+    var y = window.scrollY;
+    var next = scrolled;
+    if(!scrolled && y > HIDE_AT) next = true;
+    else if(scrolled && y < SHOW_AT) next = false;
+    if(next !== scrolled){
+      scrolled = next;
+      if(!scrolled) peeking = false;
+      apply();
+      // khóa onScroll trong thời gian transition (0.85s) để chiều cao trang
+      // thay đổi không tự bật lại onScroll gây rung.
+      animating = true;
+      setTimeout(function(){ animating = false; }, 900);
+    }
   }
   window.addEventListener('scroll', onScroll, { passive:true });
 
@@ -2810,8 +2853,46 @@ setupGuideToggle('guideToggle2', 'guideWrap2');
   });
 })();
 
+/* Helper toàn cục: cửa sổ chỉnh sửa có đang mở không */
+function isEditorOpen(){
+  var ov = document.getElementById('editorOverlay');
+  return !!(ov && ov.classList.contains('open'));
+}
+
+/* Trong cửa sổ chỉnh sửa: ô rỗng chỉ được CHỌN (không tự focus). Khi người dùng
+   bắt đầu gõ ký tự, focus ô rỗng đang chọn để cho nhập (giống Google Sheets). */
+function editorTypeIntoEmpty(which){
+  if(!isEditorOpen()) return false;
+  var sel  = (which === 'grid1') ? inGrid : c2sel;
+  if(!sel.anchor) return false;
+  var cellAt = (which === 'grid1') ? gridCellAt : c2CellAt;
+  var cell = cellAt(sel.anchor.r, sel.anchor.c);
+  if(!cell) return false;
+  var ta = cell.querySelector('textarea');
+  if(!ta) return false;
+  if(ta.value.trim() !== '') return false; // chỉ áp dụng cho ô rỗng
+  if(document.activeElement === ta) return false; // đã focus rồi
+  ta.focus();
+  return true;
+}
+document.addEventListener('keydown', function(e){
+  if(!isEditorOpen()) return;
+  if(e.ctrlKey || e.metaKey || e.altKey) return;
+  // bỏ qua phím điều hướng/chức năng
+  var skip = ['Delete','Backspace','ArrowLeft','ArrowRight','ArrowUp','ArrowDown',
+              'Tab','Escape','Home','End','PageUp','PageDown','Shift','Control','Alt','Meta','Enter'];
+  if(skip.indexOf(e.key) !== -1) return;
+  if(e.key.length !== 1) return; // chỉ phím ký tự đơn
+  // xác định lưới nào đang trong modal
+  var which = document.querySelector('#editorBody #gridScroll') ? 'grid1'
+            : (document.querySelector('#editorBody #grid4Scroll') ? 'grid2' : null);
+  if(!which) return;
+  editorTypeIntoEmpty(which);
+  // không preventDefault: sau khi focus, ký tự sẽ vào ô như bình thường
+}, true);
+
 /* =========================================================================
-   CỬA SỔ CHỈNH SỬA DỮ LIỆU (V14)
+   CỬA SỔ CHỈNH SỬA DỮ LIỆU
    Nguyên tắc: KHÔNG sao chép dữ liệu. Khi mở, DI CHUYỂN lưới gốc (.grid-input)
    từ chỗ cũ vào trong modal; khi đóng, TRẢ về đúng chỗ cũ. Vì vậy mọi thao
    tác trong modal chính là thao tác trên lưới thật -> ghi ngay, không lệch
@@ -2824,6 +2905,13 @@ setupGuideToggle('guideToggle2', 'guideWrap2');
   if(!overlay || !body) return;
 
   var current = null; // { which:'grid1'|'grid2', input:Element, host:Element }
+
+  function regrowAll(which){
+    // tính lại chiều cao mọi ô cho khớp cỡ chữ hiện tại (modal to hơn -> cần co giãn lại)
+    var sel = (which === 'grid1') ? '#gridScroll textarea' : '#grid4Scroll textarea';
+    var grow = (which === 'grid1') ? autoGrow : c2AutoGrow;
+    document.querySelectorAll(sel).forEach(function(ta){ grow(ta); });
+  }
 
   function openEditor(which){
     var inputId = (which === 'grid1') ? 'gridInput1' : 'gridInput2';
@@ -2839,18 +2927,34 @@ setupGuideToggle('guideToggle2', 'guideWrap2');
 
     // chuyển lưới gốc vào modal
     body.appendChild(input);
-    overlay.classList.add('open');
-    overlay.setAttribute('aria-hidden','false');
     document.body.style.overflow = 'hidden'; // khóa cuộn nền
+    // hiển thị overlay rồi bật hiệu ứng ở khung hình kế tiếp -> chuyển vào MƯỢT
+    overlay.style.display = 'flex';
+    overlay.setAttribute('aria-hidden','false');
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        overlay.classList.add('open');
+        // ô trong modal chữ to hơn -> tính lại chiều cao để hiện hết nội dung dài
+        regrowAll(which);
+      });
+    });
   }
 
   function closeEditor(){
     if(!current) return;
-    // trả lưới về đúng chỗ cũ
-    current.host.appendChild(current.input);
+    var cur = current;
+    // chuyển ra MƯỢT: bỏ class open (chạy transition), khi xong mới trả lưới + ẩn overlay
     overlay.classList.remove('open');
     overlay.setAttribute('aria-hidden','true');
-    document.body.style.overflow = '';
+    var finish = function(){
+      cur.host.appendChild(cur.input);
+      overlay.style.display = 'none';
+      document.body.style.overflow = '';
+      // tính lại chiều cao ô khi về lưới thường (cỡ chữ nhỏ lại)
+      regrowAll(cur.which);
+    };
+    // đợi hiệu ứng đóng xong (khớp thời lượng CSS) rồi mới dọn
+    setTimeout(finish, 240);
     current = null;
   }
 
@@ -2860,11 +2964,8 @@ setupGuideToggle('guideToggle2', 'guideWrap2');
   if(b1) b1.addEventListener('click', function(){ openEditor('grid1'); });
   if(b2) b2.addEventListener('click', function(){ openEditor('grid2'); });
 
-  // Đóng: nút Xong, click nền tối, phím Esc
+  // Đóng: CHỈ bằng nút Xong hoặc phím Esc (đã bỏ "click ra ngoài để thoát")
   document.getElementById('edDone').addEventListener('click', closeEditor);
-  overlay.addEventListener('mousedown', function(e){
-    if(e.target === overlay) closeEditor(); // chỉ khi bấm ra vùng nền tối
-  });
   document.addEventListener('keydown', function(e){
     if(e.key === 'Escape' && overlay.classList.contains('open')){
       // không đóng nếu đang sửa 1 ô (để Esc hủy sửa ô trước)
