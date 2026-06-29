@@ -47,11 +47,11 @@
     overflow:visible;
   }
   .nav-shell{
-    display:flex; justify-content:center;
+    display:flex; justify-content:flex-end;
     margin:0 0 16px;
     /* hiệu ứng: thanh biến mất NHANH (transform/opacity ngắn) */
     transition:transform .28s ease, opacity .24s ease;
-    transform-origin:top center;
+    transform-origin:top right;
     will-change:transform, opacity;
   }
   /* Lớp bao điều khiển chiều cao: thu lại CHẬM để bảng dâng lên thong thả */
@@ -70,9 +70,11 @@
     max-height:0;
     margin-bottom:0;
   }
-  /* khi đang "peek" (rê nút tròn để mở lại): thanh hiện lại nhanh, chiều cao giãn */
+  /* khi đang "peek" (rê nút tròn để mở lại): thanh hiện lại nhanh, chiều cao giãn.
+     Căn về BÊN PHẢI cho khớp vị trí nút tròn (anh muốn nằm bên phải). */
   .nav-wrap.peeking .nav-shell{
     transform:none; opacity:1; pointer-events:auto;
+    justify-content:flex-end;
   }
   .nav-wrap.peeking .nav-collapser{
     max-height:200px;
@@ -102,29 +104,28 @@
 
   /* ===== NÚT TRÒN NỔI (gọi thanh khi đã ẩn) ===== */
   .nav-fab{
-    position:fixed; top:14px; right:20px; left:auto;
-    /* trạng thái ẩn ban đầu: nằm lệch sang TRÁI-GIỮA, để khi "bay" sẽ trượt sang phải */
-    transform:translateX(-44vw) translateY(0) scale(.7) rotate(-12deg);
+    position:fixed; top:16px; right:22px; left:auto;
+    /* trạng thái ẩn: ở ngay góc phải, hơi nhỏ + lùi lên trên, KHÔNG bay ngang màn hình */
+    transform:translateY(-14px) scale(.6);
     z-index:101;
-    width:48px; height:48px; border-radius:50%; border:none; cursor:pointer;
+    width:50px; height:50px; border-radius:50%; border:none; cursor:pointer;
     background:linear-gradient(135deg,#22c55e,#15803d);
-    color:#fff; font-size:21px;
+    color:#fff; font-size:22px;
     display:flex; align-items:center; justify-content:center;
-    box-shadow:0 6px 18px rgba(21,128,61,.4);
+    box-shadow:0 8px 22px rgba(21,128,61,.45);
     opacity:0; pointer-events:none;
-    /* BAY từ từ: thời gian dài + đường cong nảy nhẹ để thấy rõ chuyển động */
-    transition:transform .9s cubic-bezier(.22,1,.36,1), opacity .5s ease, box-shadow .25s ease;
+    transition:transform .42s cubic-bezier(.34,1.56,.64,1), opacity .3s ease, box-shadow .25s ease;
   }
-  /* khi thanh ẩn -> nút "bay" về vị trí bên phải, dừng lại nổi bật xanh lá */
+  /* khi thanh ẩn -> nút hiện ra gọn gàng tại góc phải (thả nhẹ xuống + bung nhẹ) */
   .nav-fab.show{
-    transform:translateX(0) translateY(0) scale(1) rotate(0deg);
-    opacity:.92; pointer-events:auto;
+    transform:translateY(0) scale(1);
+    opacity:1; pointer-events:auto;
   }
   .nav-fab.show:hover{
-    opacity:1;
-    box-shadow:0 12px 28px rgba(21,128,61,.6), 0 0 0 6px rgba(34,197,94,.22);
+    transform:translateY(0) scale(1.06);
+    box-shadow:0 12px 30px rgba(21,128,61,.62), 0 0 0 6px rgba(34,197,94,.22);
   }
-  .nav-fab:active{ transform:translateX(0) translateY(0) scale(.92); }
+  .nav-fab:active{ transform:translateY(0) scale(.93); }
   .fab-ico{ line-height:1; pointer-events:none; }
   /* vòng nhịp nhẹ quanh nút (xanh lá) để người dùng chú ý */
   .fab-pulse{
@@ -678,9 +679,75 @@
     .editor-body .grid-scroll{max-height:calc(100vh - 320px)}
   }
 
+  /* ===== MÀN HÌNH NHẬP TÊN NGƯỜI DÙNG ===== */
+  .login-overlay{
+    position:fixed; inset:0; z-index:2000;
+    background:linear-gradient(135deg,#0c1626,#0f1f38);
+    display:flex; align-items:center; justify-content:center; padding:20px;
+    transition:opacity .35s ease;
+  }
+  .login-overlay.hide{ opacity:0; pointer-events:none; }
+  .login-card{
+    background:var(--panel); border-radius:18px; padding:34px 30px;
+    width:100%; max-width:420px; text-align:center;
+    box-shadow:0 30px 80px rgba(0,0,0,.5);
+    animation:edPop .3s cubic-bezier(.22,1,.36,1);
+  }
+  .login-logo{
+    width:60px; height:60px; border-radius:15px; margin:0 auto 16px;
+    background:linear-gradient(135deg,#2f86ff,#0b4fc4);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:26px; color:#fff;
+    box-shadow:0 6px 18px rgba(31,111,235,.5);
+  }
+  .login-title{ margin:0 0 8px; font-size:21px; font-weight:800; color:var(--ink); }
+  .login-sub{ margin:0 0 20px; font-size:14px; color:var(--ink-soft); line-height:1.6; }
+  .login-input{
+    width:100%; box-sizing:border-box; padding:13px 16px; font-size:16px;
+    border:2px solid var(--line-strong); border-radius:11px; outline:none;
+    font-family:var(--sans); transition:border-color .18s ease;
+  }
+  .login-input:focus{ border-color:var(--accent); }
+  .login-err{ color:#d8584a; font-size:13px; min-height:18px; margin:7px 0 0; text-align:left; }
+  .login-btn{ width:100%; margin-top:14px; padding:13px; font-size:15.5px; justify-content:center; }
+
+  /* ===== BADGE TÊN NGƯỜI DÙNG (góc dưới trái) ===== */
+  .user-badge{
+    position:fixed; left:18px; bottom:18px; z-index:90;
+    display:flex; align-items:center; gap:8px;
+    background:rgba(19,36,61,.92); color:#eaf2ff;
+    padding:8px 12px; border-radius:11px;
+    border:1px solid rgba(120,170,255,.22);
+    box-shadow:0 6px 18px rgba(0,0,0,.3);
+    font-size:13.5px; backdrop-filter:blur(6px);
+    opacity:.92;
+  }
+  .user-badge .ub-ico{ font-size:15px; }
+  .user-badge .ub-name{ font-weight:700; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .user-badge .ub-change{
+    border:none; background:rgba(255,255,255,.14); color:#cfe0ff;
+    font-size:12px; font-weight:700; padding:4px 9px; border-radius:7px; cursor:pointer;
+    font-family:var(--sans); transition:background .15s ease;
+  }
+  .user-badge .ub-change:hover{ background:rgba(255,255,255,.26); }
+  @media print{ .user-badge{ display:none !important; } }
+
 </style>
 </head>
 <body data-tab="process">
+
+<!-- ===== MÀN HÌNH NHẬP TÊN NGƯỜI DÙNG (phiên làm việc) ===== -->
+<div class="login-overlay" id="loginOverlay" aria-hidden="false">
+  <div class="login-card" role="dialog" aria-modal="true">
+    <div class="login-logo">ZZ</div>
+    <h2 class="login-title">Chào mừng đến ZinZinMotor</h2>
+    <p class="login-sub">Vui lòng nhập tên của bạn để bắt đầu. Tên này được ghi vào lịch sử log khi tạo đơn.</p>
+    <input type="text" id="loginNameInput" class="login-input" placeholder="Nhập tên của bạn…" autocomplete="off" maxlength="50" />
+    <div class="login-err" id="loginErr"></div>
+    <button class="btn btn-primary login-btn" id="loginBtn" type="button">Bắt đầu sử dụng →</button>
+  </div>
+</div>
+
 <div class="wrap">
 
   <!-- ===== THANH ĐIỀU HƯỚNG (chỉ 2 nút). Tự ẩn khi cuộn, gọi lại bằng nút tròn. ===== -->
@@ -728,6 +795,13 @@
       <span class="qn-label">Tới: Đơn hàng (xem trước in)</span>
       <span class="qn-circle">🧾</span>
     </button>
+  </div>
+
+  <!-- ===== BADGE TÊN NGƯỜI DÙNG (góc dưới trái) ===== -->
+  <div class="user-badge" id="userBadge" title="Người đang dùng web app">
+    <span class="ub-ico">👤</span>
+    <span class="ub-name" id="userBadgeName">—</span>
+    <button class="ub-change" id="userChangeBtn" type="button" title="Đổi tên người dùng">Đổi</button>
   </div>
 
   <!-- ============================================================
@@ -1588,6 +1662,18 @@ document.addEventListener('mousemove', function(e){
 
 /* kết thúc kéo chọn lưới nhập: reset pending, dừng auto-scroll */
 document.addEventListener('mouseup', function(){
+  // TRONG cửa sổ chỉnh sửa: nếu là CLICK đơn (không kéo) vào ô có dữ liệu -> mở sửa ngay.
+  // (Ngoài modal vẫn giữ cơ chế nhấp đúp để chống gõ nhầm.)
+  if(isEditorOpen() && inGrid.pending && !inGrid.pending.started && inGrid.anchor){
+    var cell = gridCellAt(inGrid.anchor.r, inGrid.anchor.c);
+    if(cell){
+      var ta = cell.querySelector('textarea');
+      if(ta && !ta.classList.contains('editing') && ta.value.trim() !== ''){
+        clearGridSelection();
+        unlockForEdit(ta);
+      }
+    }
+  }
   if(inGrid.pending) inGrid.pending = null;
   if(inGrid.selecting){
     inGrid.selecting = false;
@@ -2146,6 +2232,19 @@ var C2_CONFIG = {
   COL_LOC:   6    // cột G
 };
 
+/* ============================================================
+   CẤU HÌNH GHI LOG LÊN GOOGLE SHEET (qua Google Apps Script)
+   --- ANH ĐIỀN 3 GIÁ TRỊ THẬT VÀO ĐÂY ---
+   - APPS_SCRIPT_URL: link Web App của Apps Script, kết thúc bằng /exec
+   - SPREADSHEET_ID:  id bảng tính chứa sheet LOG
+   - SHEET_NAME:      tên sheet ghi log (vd "LOG")
+   ============================================================ */
+var LOG_CONFIG = {
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbwylHEFdL6J9ZBXLwU2k4dxezq5t358AxMo4BAN49N9yuV1DdwzQlzHj9Iy9Hf9TMX5eA/exec",   // https://script.google.com/macros/s/..../exec
+  SPREADSHEET_ID:  "1Ro4FLShWGRQHilJ7m4RSmsfTp65QXpvJNfAjVjCLvrc",
+  SHEET_NAME:      "LOG"
+};
+
 /* ---------- Trạng thái dữ liệu MISA ---------- */
 var misa = {
   loaded:false,
@@ -2467,6 +2566,16 @@ document.addEventListener('mousemove', function(e){
   c2ExtendSel(e.clientX,e.clientY);
 });
 document.addEventListener('mouseup', function(){
+  // TRONG modal: click đơn (không kéo) vào ô có dữ liệu -> mở sửa ngay.
+  if(isEditorOpen() && c2sel.pending && !c2sel.pending.started && c2sel.anchor){
+    var cell = c2CellAt(c2sel.anchor.r, c2sel.anchor.c);
+    if(cell){
+      var ta = cell.querySelector('textarea');
+      if(ta && !ta.classList.contains('editing') && ta.value.trim() !== ''){
+        c2ClearSel(); c2Unlock(ta);
+      }
+    }
+  }
   if(c2sel.pending) c2sel.pending=null;
   if(c2sel.selecting){
     c2sel.selecting=false;
@@ -3001,6 +3110,132 @@ document.addEventListener('keydown', function(e){
     }
     toast('Đã thêm 1 dòng ở cuối.', 'ok');
   });
+})();
+
+/* =========================================================================
+   GHI LOG LỊCH SỬ LÊN GOOGLE SHEET (V16) — chức năng THÊM, không đụng logic gốc
+   ========================================================================= */
+(function(){
+  var LS_KEY = 'zinzin_user_name';
+
+  /* ---------- Quản lý tên người dùng (phiên làm việc) ---------- */
+  function getUserName(){
+    try{ return localStorage.getItem(LS_KEY) || ''; }catch(e){ return window._zzUserName || ''; }
+  }
+  function setUserName(name){
+    try{ localStorage.setItem(LS_KEY, name); }catch(e){ window._zzUserName = name; }
+  }
+  function refreshBadge(){
+    var el = document.getElementById('userBadgeName');
+    if(el) el.textContent = getUserName() || '—';
+  }
+
+  var loginOverlay = document.getElementById('loginOverlay');
+  var loginInput   = document.getElementById('loginNameInput');
+  var loginErr     = document.getElementById('loginErr');
+  var loginBtn     = document.getElementById('loginBtn');
+
+  function showLogin(prefill){
+    if(prefill && loginInput) loginInput.value = prefill;
+    loginErr.textContent = '';
+    loginOverlay.classList.remove('hide');
+    loginOverlay.setAttribute('aria-hidden','false');
+    setTimeout(function(){ if(loginInput) loginInput.focus(); }, 60);
+  }
+  function hideLogin(){
+    loginOverlay.classList.add('hide');
+    loginOverlay.setAttribute('aria-hidden','true');
+  }
+  function submitLogin(){
+    var v = (loginInput.value || '').trim();
+    if(v === ''){ loginErr.textContent = 'Vui lòng nhập tên của bạn.'; loginInput.focus(); return; }
+    setUserName(v);
+    refreshBadge();
+    hideLogin();
+  }
+  loginBtn.addEventListener('click', submitLogin);
+  loginInput.addEventListener('keydown', function(e){ if(e.key==='Enter') submitLogin(); });
+
+  // nút đổi tên ở badge
+  var changeBtn = document.getElementById('userChangeBtn');
+  if(changeBtn) changeBtn.addEventListener('click', function(){ showLogin(getUserName()); });
+
+  // khi mở app: nếu chưa có tên -> hiện màn hình nhập; có rồi -> ẩn luôn
+  if(getUserName()){ refreshBadge(); hideLogin(); }
+  else { showLogin(''); }
+
+  /* ---------- Đọc dữ liệu THÔ từ lưới Nhập đơn (mọi dòng có nội dung) ----------
+     KHÔNG dùng hàm xử lý gốc để tránh đụng logic. Đọc thẳng giá trị các ô,
+     giữ nguyên bản gốc người dùng nhập. Lấy mọi dòng có BẤT KỲ nội dung nào
+     ở 1 trong 4 cột (bỏ dòng trống hoàn toàn). */
+  function readRawRowsForLog(){
+    var rowEls = document.querySelectorAll('#grid4Scroll .grid4-row');
+    var out = [];
+    rowEls.forEach(function(rowEl){
+      var tas = rowEl.querySelectorAll('textarea');
+      var a = tas[0] ? tas[0].value : '';
+      var b = tas[1] ? tas[1].value : '';
+      var c = tas[2] ? tas[2].value : '';
+      var d = tas[3] ? tas[3].value : '';
+      // bỏ dòng trống hoàn toàn (cả 4 cột đều rỗng sau khi trim)
+      if((a+'').trim()==='' && (b+'').trim()==='' && (c+'').trim()==='' && (d+'').trim()==='') return;
+      out.push([a, b, c, d]);
+    });
+    return out;
+  }
+
+  /* ---------- Định dạng thời gian dd/mm/yyyy hh:mm:ss (giống VBA) ---------- */
+  function nowStamp(){
+    var n = new Date();
+    function p(x){ return (x<10?'0':'')+x; }
+    return p(n.getDate())+'/'+p(n.getMonth()+1)+'/'+n.getFullYear()+' '+
+           p(n.getHours())+':'+p(n.getMinutes())+':'+p(n.getSeconds());
+  }
+
+  /* ---------- Gửi log lên Google Apps Script (giống VBA: POST JSON) ---------- */
+  function isLogConfigured(){
+    return LOG_CONFIG.APPS_SCRIPT_URL.indexOf('DÁN_') !== 0 &&
+           LOG_CONFIG.SPREADSHEET_ID.indexOf('DÁN_') !== 0 &&
+           LOG_CONFIG.APPS_SCRIPT_URL.indexOf('http') === 0;
+  }
+  function pushLog(){
+    if(!isLogConfigured()){
+      toast('Chưa cấu hình ghi log (LOG_CONFIG). Đơn vẫn được tạo bình thường.','warn');
+      return;
+    }
+    var raw = readRawRowsForLog();
+    if(raw.length === 0) return; // không có gì để ghi
+    var creator = getUserName() || '(không tên)';
+    var stamp = nowStamp();
+    // mỗi dòng: [Order_ID, SKU, Quantity, Price, creator, timestamp] — giống VBA
+    var rows = raw.map(function(r){ return [r[0], r[1], r[2], r[3], creator, stamp]; });
+    var body = JSON.stringify({
+      spreadsheet_id: LOG_CONFIG.SPREADSHEET_ID,
+      sheet_name:     LOG_CONFIG.SHEET_NAME,
+      rows:           rows
+    });
+    // Apps Script Web App: dùng text/plain để tránh preflight CORS
+    fetch(LOG_CONFIG.APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: body
+    }).then(function(res){
+      if(res.ok){ toast('Đã ghi log lịch sử ('+rows.length+' dòng).','ok'); }
+      else { toast('Ghi log thất bại (mã '+res.status+'). Đơn vẫn được tạo.','warn'); }
+    }).catch(function(){
+      toast('Ghi log thất bại (mất mạng?). Đơn vẫn được tạo.','warn');
+    });
+  }
+
+  /* ---------- Móc vào nút "Tạo đơn hàng": tạo đơn xong thì ghi log ----------
+     KHÔNG sửa hàm createInvoices. Chỉ gắn thêm 1 listener chạy SAU. */
+  var btnCreate = document.getElementById('btnCreate');
+  if(btnCreate){
+    btnCreate.addEventListener('click', function(){
+      // chạy sau khi createInvoices() (listener gốc) đã chạy xong trong cùng vòng sự kiện
+      setTimeout(pushLog, 0);
+    });
+  }
 })();
 </script>
 </body>
